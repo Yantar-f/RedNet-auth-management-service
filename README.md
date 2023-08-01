@@ -1,0 +1,1 @@
+# RedNet-auth-management-service

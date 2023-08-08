@@ -1,0 +1,37 @@
+version: '3.0'
+
+services:
+    postgre:
+        container_name: rednet-auth-management-service-postgre
+        image: postgres
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: RedNetDB
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: 123
+        networks:
+            - rednet-network
+    redis:
+        container_name: rednet-auth-management-service-redis
+        image: redis
+        ports:
+            - '6379:6379'
+        networks:
+            - rednet-network
+    api:
+        container_name: rednet-auth-management-service
+        build: ./auth-management-service
+        env_file:
+            -   ./auth-management-service/.env
+        ports:
+            - "8001:8001"
+        depends_on:
+            - postgre
+            - redis
+        restart: unless-stopped
+        networks:
+            - rednet-network
+networks:
+    rednet-network:
+        external: true

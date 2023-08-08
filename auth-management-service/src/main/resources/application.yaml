@@ -1,0 +1,59 @@
+server:
+    port: 8001
+    error:
+        include-message: always
+        include-binding-errors: always
+spring:
+    data:
+        redis:
+            port: 6379
+            host: localhost
+    datasource:
+        url: ${AUTH_MANAGEMENT_SERVICE_DATABASE_URL}
+        username: ${AUTH_MANAGEMENT_SERVICE_DATABASE_USERNAME}
+        password: ${AUTH_MANAGEMENT_SERVICE_DATABASE_PASSWORD}
+        driver-class-name: org.postgresql.Driver
+    jpa:
+        database: postgresql
+        open-in-view: false
+        show-sql: true
+        hibernate:
+            ddl-auto: create-drop
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+                format_sql: true
+            jakarta:
+                persistence:
+                    sharedCache:
+                        mode: ENABLE_SELECTIVE
+    mail:
+        host: smtp.yandex.ru
+        port: 465
+        username: ${AUTH_MANAGEMENT_SERVICE_MAIL_USERNAME}
+        password: ${AUTH_MANAGEMENT_SERVICE_MAIL_PASSWORD}
+        protocol: smtps
+        default-encoding: UTF-8
+rednet:
+    app:
+        password-encoder-strength: 10
+        access-token-cookie-name: rednet-jwt-access
+        access-token-expiration-ms: 1800000
+        access-token-cookie-expiration-s: 120
+        access-token-cookie-path: /
+        access-token-secret-key: ${AUTH_ACCESS_SECRET_KEY}
+        refresh-token-cookie-name: rednet-jwt-refresh
+        refresh-token-expiration-ms: 180000000
+        refresh-token-cookie-expiration-s: 3600
+        refresh-token-cookie-path: /refresh-tokens
+        refresh-token-secret-key: ${AUTH_REFRESH_SECRET_KEY}
+        auth-token-issuer: rednet-auth
+        email:
+            verification-refresh-token-cookie-name: rednet-evt-refresh
+            verification-refresh-token-cookie-expiration-s:
+            verification-refresh-token-expiration-ms: 300000
+            verification-refresh-token-path: /api/auth
+            verification-token-expiration-ms: 150000
+            verification-refresh-token-activation-ms: 70000
+            verification-link: http://localhost:8080/api/auth/verify-email?token=
+            verification-subject: RedNet Email Verification

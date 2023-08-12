@@ -1,9 +1,9 @@
 package com.rednet.authmanagementservice.service.impl;
 
-import com.rednet.authmanagementservice.config.EnumRoles;
 import com.rednet.authmanagementservice.entity.Account;
+import com.rednet.authmanagementservice.entity.Registration;
 import com.rednet.authmanagementservice.exception.MissingTokenException;
-import com.rednet.authmanagementservice.exception.OccupiedValueException;
+import com.rednet.authmanagementservice.exception.OccupiedValuesException;
 import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
 import com.rednet.authmanagementservice.payload.ChangePasswordRequestMessage;
 import com.rednet.authmanagementservice.payload.SigninRequestMessage;
@@ -11,12 +11,15 @@ import com.rednet.authmanagementservice.payload.SignupRequestMessage;
 import com.rednet.authmanagementservice.payload.SimpleResponseMessage;
 import com.rednet.authmanagementservice.payload.VerifyEmailRequestMessage;
 import com.rednet.authmanagementservice.repository.AccountRepository;
+import com.rednet.authmanagementservice.repository.RegistrationRepository;
+import com.rednet.authmanagementservice.service.ActivationCodeGenerator;
 import com.rednet.authmanagementservice.service.AuthService;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtParser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -24,44 +27,50 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
     private final AccountRepository accountRepository;
+    private final RegistrationRepository registrationRepository;
     private final PasswordEncoder passwordEncoder;
     private final String accessTokenCookieName;
 
 
     private final JwtParser refreshTokenParser;
-    private final JwtBuilder accessTokenBuilder;
-    private final JwtBuilder refreshTokenBuilder;
+    private final JwtParser registrationTokenParser;
     private final String accessTokenCookiePath;
     private final String refreshTokenCookiePath;
     private final String refreshTokenCookieName;
+    private final ActivationCodeGenerator activationCodeGenerator;
 
     @Autowired
     public AuthServiceImpl(
         AccountRepository accountRepository,
-        PasswordEncoder passwordEncoder,
+        RegistrationRepository registrationRepository, PasswordEncoder passwordEncoder,
         @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
+        @Qualifier("registrationTokenBuilder") JwtBuilder registrationTokenBuilder,
+        @Qualifier("registrationTokenParser") JwtParser registrationTokenParser,
         @Value("${rednet.app.access-token-cookie-path}") String accessTokenCookiePath,
         @Value("${rednet.app.refresh-token-cookie-name}") String refreshTokenCookiePath,
         @Value("${rednet.app.refresh-token-cookie-path}")String refreshTokenCookieName,
-        @Value("${refreshTokenParser}") JwtParser refreshTokenParser,
-        @Value("${accessTokenBuilder}") JwtBuilder accessTokenBuilder,
-        @Value("${refreshTokenBuilder}") JwtBuilder refreshTokenBuilder
+        @Qualifier("refreshTokenParser") JwtParser refreshTokenParser,
+        @Qualifier("accessTokenBuilder") JwtBuilder accessTokenBuilder,
+        @Qualifier("refreshTokenBuilder") JwtBuilder refreshTokenBuilder,
+        ActivationCodeGenerator activationCodeGenerator
     ) {
         this.accountRepository = accountRepository;
+        this.registrationRepository = registrationRepository;
         this.passwordEncoder = passwordEncoder;
         this.accessTokenCookieName = accessTokenCookieName;
+        this.registrationTokenParser = registrationTokenParser;
         this.refreshTokenCookiePath = refreshTokenCookiePath;
         this.refreshTokenCookieName = refreshTokenCookieName;
         this.refreshTokenParser = refreshTokenParser;
-        this.accessTokenBuilder = accessTokenBuilder;
-        this.refreshTokenBuilder = refreshTokenBuilder;
         this.accessTokenCookiePath = accessTokenCookiePath;
+        this.activationCodeGenerator = activationCodeGenerator;
     }
 
     @Override
@@ -71,26 +80,21 @@ public class AuthServiceImpl implements AuthService {
             .orElse(null);
 
         if (account != null) {
-            StringBuilder errorMessageBuilder = new StringBuilder("Occupied values: ");
-
-            if (requestMessage.getUsername().equals(account.getUsername())) {
-                errorMessageBuilder.append("username");
-                if (requestMessage.getEmail().equals(account.getEmail())) {
-                    errorMessageBuilder.append(", email");
-                }
-            } else {
-                errorMessageBuilder.append("email");
-            }
-
-            throw new OccupiedValueException(errorMessageBuilder.toString());
+            throw new OccupiedValuesException(new ArrayList<>(){{
+                if (requestMessage.getUsername().equals(account.getUsername())) add("Occupied value: username");
+                if (requestMessage.getEmail().equals(account.getEmail())) add("Occupied value: email");
+            }});
         }
 
-        accountRepository.save(new Account(
+        int activationCode = activationCodeGenerator.generate();
+        String registrationKey = UUID.randomUUID().toString();
+
+        registrationRepository.save(registrationKey, new Registration(
+            String.valueOf(activationCode),
             requestMessage.getUsername(),
             passwordEncoder.encode(requestMessage.getPassword()),
             requestMessage.getEmail(),
-            requestMessage.getSecretWord(),
-            new HashSet<>(){{add(EnumRoles.ROLE_USER);}}
+            requestMessage.getSecretWord()
         ));
 
         ///

@@ -13,6 +13,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,7 +33,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
     public AuthTokenFilter(
         @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
-        @Value("accessTokenParser") JwtParser accessTokenParser
+        @Qualifier("accessTokenParser") JwtParser accessTokenParser
     ) {
         this.accessTokenCookieName = accessTokenCookieName;
         this.accessTokenParser = accessTokenParser;

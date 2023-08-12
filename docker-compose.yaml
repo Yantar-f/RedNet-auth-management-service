@@ -12,11 +12,18 @@ services:
             POSTGRES_PASSWORD: 123
         networks:
             - rednet-network
-    redis:
-        container_name: rednet-auth-management-service-redis
+    redis-refresh-tokens:
+        container_name: rednet-auth-management-service-redis-refresh-tokens
         image: redis
         ports:
             - '6379:6379'
+        networks:
+            - rednet-network
+    redis-activation-codes:
+        container_name: rednet-auth-management-service-redis-activation-codes
+        image: redis
+        ports:
+            - '6380:6379'
         networks:
             - rednet-network
     api:
@@ -28,7 +35,8 @@ services:
             - "8001:8001"
         depends_on:
             - postgre
-            - redis
+            - redis-refresh-tokens
+            - redis-activation-codes
         restart: unless-stopped
         networks:
             - rednet-network

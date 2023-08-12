@@ -6,8 +6,12 @@ server:
 spring:
     data:
         redis:
-            port: 6379
-            host: localhost
+            refresh-token-db:
+                port: 6379
+                host: localhost
+            registration-db:
+                port: 6380
+                host: localhost
     datasource:
         url: ${AUTH_MANAGEMENT_SERVICE_DATABASE_URL}
         username: ${AUTH_MANAGEMENT_SERVICE_DATABASE_USERNAME}
@@ -38,13 +42,16 @@ rednet:
     app:
         password-encoder-strength: 10
         access-token-cookie-name: rednet-jwt-access
-        access-token-expiration-ms: 1800000
-        access-token-cookie-expiration-s: 120
+        access-token-expiration-ms: 60000
+        access-token-cookie-expiration-s: 60
         access-token-cookie-path: /
         access-token-secret-key: ${AUTH_ACCESS_SECRET_KEY}
+        registration-refresh-token-secret-key: ${AUTH_REGISTRATION_REFRESH_SECRET_KEY}
+        registration-refresh-token-cookie-name: rednet-jwt-refresh
+        registration-expiration-ms: 300000
         refresh-token-cookie-name: rednet-jwt-refresh
-        refresh-token-expiration-ms: 180000000
-        refresh-token-cookie-expiration-s: 3600
+        refresh-token-expiration-ms: 172800000
+        refresh-token-cookie-expiration-s: 172800
         refresh-token-cookie-path: /refresh-tokens
         refresh-token-secret-key: ${AUTH_REFRESH_SECRET_KEY}
         auth-token-issuer: rednet-auth

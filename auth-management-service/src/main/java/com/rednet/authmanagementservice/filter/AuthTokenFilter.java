@@ -1,5 +1,6 @@
 package com.rednet.authmanagementservice.filter;
 
+import com.rednet.authmanagementservice.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtParser;
@@ -13,7 +14,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,10 +33,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
     public AuthTokenFilter(
         @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
-        @Qualifier("accessTokenParser") JwtParser accessTokenParser
+        JwtUtil jwtUtil
     ) {
         this.accessTokenCookieName = accessTokenCookieName;
-        this.accessTokenParser = accessTokenParser;
+        this.accessTokenParser = jwtUtil.getAccessTokenParser();
     }
 
     @Override

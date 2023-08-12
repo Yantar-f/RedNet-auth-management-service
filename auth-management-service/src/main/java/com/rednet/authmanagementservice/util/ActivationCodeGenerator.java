@@ -1,4 +1,4 @@
-package com.rednet.authmanagementservice.service;
+package com.rednet.authmanagementservice.util;
 
 public interface ActivationCodeGenerator {
     int generate();

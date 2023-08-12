@@ -5,21 +5,20 @@ import com.rednet.authmanagementservice.entity.Registration;
 import com.rednet.authmanagementservice.exception.MissingTokenException;
 import com.rednet.authmanagementservice.exception.OccupiedValuesException;
 import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
-import com.rednet.authmanagementservice.payload.ChangePasswordRequestMessage;
-import com.rednet.authmanagementservice.payload.SigninRequestMessage;
-import com.rednet.authmanagementservice.payload.SignupRequestMessage;
-import com.rednet.authmanagementservice.payload.SimpleResponseMessage;
-import com.rednet.authmanagementservice.payload.VerifyEmailRequestMessage;
+import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
+import com.rednet.authmanagementservice.payload.response.SignupResponseMessage;
+import com.rednet.authmanagementservice.payload.response.SimpleResponseMessage;
+import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
 import com.rednet.authmanagementservice.repository.AccountRepository;
 import com.rednet.authmanagementservice.repository.RegistrationRepository;
-import com.rednet.authmanagementservice.service.ActivationCodeGenerator;
+import com.rednet.authmanagementservice.util.ActivationCodeGenerator;
 import com.rednet.authmanagementservice.service.AuthService;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.JwtParser;
+import com.rednet.authmanagementservice.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -29,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -37,40 +37,38 @@ public class AuthServiceImpl implements AuthService {
     private final RegistrationRepository registrationRepository;
     private final PasswordEncoder passwordEncoder;
     private final String accessTokenCookieName;
-
-
-    private final JwtParser refreshTokenParser;
-    private final JwtParser registrationTokenParser;
+    private final JwtUtil jwtUtil;
     private final String accessTokenCookiePath;
     private final String refreshTokenCookiePath;
     private final String refreshTokenCookieName;
     private final ActivationCodeGenerator activationCodeGenerator;
+    private final long registrationTokenActivationMs;
+    private final long registrationExpirationMs;
 
     @Autowired
     public AuthServiceImpl(
         AccountRepository accountRepository,
         RegistrationRepository registrationRepository, PasswordEncoder passwordEncoder,
+        JwtUtil jwtUtil,
         @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
-        @Qualifier("registrationTokenBuilder") JwtBuilder registrationTokenBuilder,
-        @Qualifier("registrationTokenParser") JwtParser registrationTokenParser,
         @Value("${rednet.app.access-token-cookie-path}") String accessTokenCookiePath,
         @Value("${rednet.app.refresh-token-cookie-name}") String refreshTokenCookiePath,
-        @Value("${rednet.app.refresh-token-cookie-path}")String refreshTokenCookieName,
-        @Qualifier("refreshTokenParser") JwtParser refreshTokenParser,
-        @Qualifier("accessTokenBuilder") JwtBuilder accessTokenBuilder,
-        @Qualifier("refreshTokenBuilder") JwtBuilder refreshTokenBuilder,
-        ActivationCodeGenerator activationCodeGenerator
+        @Value("${rednet.app.refresh-token-cookie-path}") String refreshTokenCookieName,
+        ActivationCodeGenerator activationCodeGenerator,
+        @Value("${rednet.app.registration-token-activation-ms}") long registrationTokenActivationMs,
+        @Value("${rednet.app.registration-expiration-ms}") long registrationExpirationMs
     ) {
         this.accountRepository = accountRepository;
         this.registrationRepository = registrationRepository;
         this.passwordEncoder = passwordEncoder;
         this.accessTokenCookieName = accessTokenCookieName;
-        this.registrationTokenParser = registrationTokenParser;
+        this.jwtUtil = jwtUtil;
         this.refreshTokenCookiePath = refreshTokenCookiePath;
         this.refreshTokenCookieName = refreshTokenCookieName;
-        this.refreshTokenParser = refreshTokenParser;
         this.accessTokenCookiePath = accessTokenCookiePath;
         this.activationCodeGenerator = activationCodeGenerator;
+        this.registrationTokenActivationMs = registrationTokenActivationMs;
+        this.registrationExpirationMs = registrationExpirationMs;
     }
 
     @Override
@@ -87,9 +85,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         int activationCode = activationCodeGenerator.generate();
-        String registrationKey = UUID.randomUUID().toString();
+        String registrationID = UUID.randomUUID().toString();
+        String registrationToken = jwtUtil.generateRegistrationTokenBuilder()
+            .setSubject(registrationID)
+            .setNotBefore(new Date(System.currentTimeMillis() + registrationTokenActivationMs))
+            .setExpiration(new Date(System.currentTimeMillis() + registrationExpirationMs))
+            .compact();
 
-        registrationRepository.save(registrationKey, new Registration(
+
+        registrationRepository.save(registrationID, new Registration(
             String.valueOf(activationCode),
             requestMessage.getUsername(),
             passwordEncoder.encode(requestMessage.getPassword()),
@@ -97,11 +101,11 @@ public class AuthServiceImpl implements AuthService {
             requestMessage.getSecretWord()
         ));
 
-        ///
-        /// create email verification token and activation code
-        ///
-
-        return null;
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.COOKIE,
+                generateRegistrationCookie(registrationToken).toString())
+            .body(new SignupResponseMessage(registrationID));
     }
 
     @Override
@@ -141,12 +145,10 @@ public class AuthServiceImpl implements AuthService {
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.COOKIE,
-                generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString()
-            )
+                generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
             .header(
                 HttpHeaders.COOKIE,
-                generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString()
-            )
+                generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
             .body(new SimpleResponseMessage("Successful logout"));
     }
 
@@ -184,6 +186,14 @@ public class AuthServiceImpl implements AuthService {
 
     private ResponseCookie generateCleaningCookie(String name, String path) {
         return ResponseCookie.from(name)
+            .path(path)
+            .maxAge(0)
+            .build();
+    }
+
+    private ResponseCookie generateRegistrationCookie(String value) {
+        return ResponseCookie.from()
+            .value(value)
             .path(path)
             .maxAge(0)
             .build();

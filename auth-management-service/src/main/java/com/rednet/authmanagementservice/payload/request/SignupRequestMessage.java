@@ -1,4 +1,4 @@
-package com.rednet.authmanagementservice.payload;
+package com.rednet.authmanagementservice.payload.request;
 
 public class SignupRequestMessage {
     private String username;

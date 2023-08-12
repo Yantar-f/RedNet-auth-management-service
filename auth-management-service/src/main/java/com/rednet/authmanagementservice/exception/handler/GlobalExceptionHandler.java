@@ -2,7 +2,7 @@ package com.rednet.authmanagementservice.exception.handler;
 
 import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
 import com.rednet.authmanagementservice.exception.OccupiedValuesException;
-import com.rednet.authmanagementservice.payload.ErrorResponseMessage;
+import com.rednet.authmanagementservice.payload.response.ErrorResponseMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,7 +46,6 @@ public class GlobalExceptionHandler {
                 dateFormat.format(new Date()),
                 request.getRequestURI(),
                 new ArrayList<>(){{add(ex.getMessage());}}
-            )
-        );
+            ));
     }
 }

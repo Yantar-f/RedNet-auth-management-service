@@ -1,6 +1,6 @@
-package com.rednet.authmanagementservice.service.impl;
+package com.rednet.authmanagementservice.util.impl;
 
-import com.rednet.authmanagementservice.service.ActivationCodeGenerator;
+import com.rednet.authmanagementservice.util.ActivationCodeGenerator;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;

@@ -46,21 +46,14 @@ rednet:
         access-token-cookie-expiration-s: 60
         access-token-cookie-path: /
         access-token-secret-key: ${AUTH_ACCESS_SECRET_KEY}
-        registration-refresh-token-secret-key: ${AUTH_REGISTRATION_REFRESH_SECRET_KEY}
-        registration-refresh-token-cookie-name: rednet-jwt-refresh
         registration-expiration-ms: 300000
+        registration-token-activation-ms: 60000
+        registration-token-cookie-name: rednet-reg-token
+        registration-token-cookie-expiration-s: 300
+        registration-token-secret-key: ${AUTH_REGISTRATION_SECRET_KEY}
         refresh-token-cookie-name: rednet-jwt-refresh
         refresh-token-expiration-ms: 172800000
         refresh-token-cookie-expiration-s: 172800
         refresh-token-cookie-path: /refresh-tokens
         refresh-token-secret-key: ${AUTH_REFRESH_SECRET_KEY}
         auth-token-issuer: rednet-auth
-        email:
-            verification-refresh-token-cookie-name: rednet-evt-refresh
-            verification-refresh-token-cookie-expiration-s:
-            verification-refresh-token-expiration-ms: 300000
-            verification-refresh-token-path: /api/auth
-            verification-token-expiration-ms: 150000
-            verification-refresh-token-activation-ms: 70000
-            verification-link: http://localhost:8080/api/auth/verify-email?token=
-            verification-subject: RedNet Email Verification

@@ -1,9 +1,9 @@
 package com.rednet.authmanagementservice.service;
 
-import com.rednet.authmanagementservice.payload.ChangePasswordRequestMessage;
-import com.rednet.authmanagementservice.payload.SigninRequestMessage;
-import com.rednet.authmanagementservice.payload.SignupRequestMessage;
-import com.rednet.authmanagementservice.payload.VerifyEmailRequestMessage;
+import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
+import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 

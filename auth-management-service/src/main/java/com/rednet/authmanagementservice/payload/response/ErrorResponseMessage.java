@@ -1,4 +1,4 @@
-package com.rednet.authmanagementservice.payload;
+package com.rednet.authmanagementservice.payload.response;
 
 import java.util.Date;
 import java.util.List;

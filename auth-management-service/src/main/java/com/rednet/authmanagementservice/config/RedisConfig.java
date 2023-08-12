@@ -15,19 +15,19 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
     private final String refreshTokenRedisHost;
     private final int refreshTokenRedisPort;
-    private final String activationCodeRedisHost;
-    private final int activationCodeRedisPort;
+    private final String registrationRedisHost;
+    private final int registrationRedisPort;
 
     public RedisConfig(
         @Value("${spring.data.redis.refresh-token-db.host}") String refreshTokenRedisHost,
         @Value("${spring.data.redis.refresh-token-db.port}") int refreshTokenRedisPort,
-        @Value("${spring.data.redis.activation-code-db.host}") String activationCodeRedisHost,
-        @Value("${spring.data.redis.activation-code-db.port}") int activationCodeRedisPort
+        @Value("${spring.data.redis.registration-db.host}") String registrationRedisHost,
+        @Value("${spring.data.redis.registration-db.port}") int registrationRedisPort
     ) {
         this.refreshTokenRedisHost = refreshTokenRedisHost;
         this.refreshTokenRedisPort = refreshTokenRedisPort;
-        this.activationCodeRedisHost = activationCodeRedisHost;
-        this.activationCodeRedisPort = activationCodeRedisPort;
+        this.registrationRedisHost = registrationRedisHost;
+        this.registrationRedisPort = registrationRedisPort;
     }
 
     @Bean
@@ -42,7 +42,7 @@ public class RedisConfig {
     @Qualifier("registrationRedisFactory")
     public LettuceConnectionFactory activationCodeRedisFactory() {
         return new LettuceConnectionFactory(
-            new RedisStandaloneConfiguration(activationCodeRedisHost,activationCodeRedisPort)
+            new RedisStandaloneConfiguration(registrationRedisHost,registrationRedisPort)
         );
     }
 

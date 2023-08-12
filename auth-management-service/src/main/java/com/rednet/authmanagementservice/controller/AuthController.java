@@ -1,9 +1,9 @@
 package com.rednet.authmanagementservice.controller;
 
-import com.rednet.authmanagementservice.payload.ChangePasswordRequestMessage;
-import com.rednet.authmanagementservice.payload.SigninRequestMessage;
-import com.rednet.authmanagementservice.payload.SignupRequestMessage;
-import com.rednet.authmanagementservice.payload.VerifyEmailRequestMessage;
+import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
+import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
+import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
 import com.rednet.authmanagementservice.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

@@ -1,7 +1,7 @@
 package com.rednet.authmanagementservice.exception.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rednet.authmanagementservice.payload.ErrorResponseMessage;
+import com.rednet.authmanagementservice.payload.response.ErrorResponseMessage;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

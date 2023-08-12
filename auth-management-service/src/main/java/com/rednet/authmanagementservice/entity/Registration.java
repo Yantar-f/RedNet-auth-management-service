@@ -1,32 +1,32 @@
 package com.rednet.authmanagementservice.entity;
 
 public class Registration {
-    private String registrationToken;
+    private String registrationKey;
     private String username;
     private String password;
     private String email;
     private String secretWord;
 
     public Registration(
-        String registrationToken,
+        String registrationKey,
         String username,
         String password,
         String email,
         String secretWord
     ) {
-        this.registrationToken = registrationToken;
+        this.registrationKey = registrationKey;
         this.username = username;
         this.password = password;
         this.email = email;
         this.secretWord = secretWord;
     }
 
-    public String getRegistrationToken() {
-        return registrationToken;
+    public String getRegistrationKey() {
+        return registrationKey;
     }
 
-    public void setRegistrationToken(String registrationToken) {
-        this.registrationToken = registrationToken;
+    public void setRegistrationKey(String registrationKey) {
+        this.registrationKey = registrationKey;
     }
 
     public String getUsername() {

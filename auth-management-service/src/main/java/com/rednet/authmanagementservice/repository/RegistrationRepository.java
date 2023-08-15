@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -25,7 +26,11 @@ public class RegistrationRepository {
         template.opsForValue().set(registrationID, registration, RegistrationExpirationMs, TimeUnit.MILLISECONDS);
     }
 
-    public Registration find(String registrationID) {
-        return template.opsForValue().get(registrationID);
+    public Optional<Registration> find(String registrationID) {
+        return Optional.ofNullable(template.opsForValue().get(registrationID));
+    }
+
+    public void delete(String registrationID) {
+        template.opsForValue().getAndDelete(registrationID);
     }
 }

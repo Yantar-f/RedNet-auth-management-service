@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -18,11 +19,11 @@ public class RefreshTokenRepository {
         this.tokenExpirationMs = tokenExpirationMs;
     }
 
-    public void save(String userID, String token) {
-        template.opsForValue().set(userID, token, tokenExpirationMs, TimeUnit.MILLISECONDS);
+    public void save(String sessionID, String token) {
+        template.opsForValue().set(sessionID, token, tokenExpirationMs, TimeUnit.MILLISECONDS);
     }
 
-    public String find(String userID) {
-        return template.opsForValue().get(userID);
+    public Optional<String> find(String sessionID) {
+        return Optional.ofNullable(template.opsForValue().get(sessionID));
     }
 }

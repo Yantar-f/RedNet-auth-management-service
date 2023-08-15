@@ -1,75 +1,75 @@
 package com.rednet.authmanagementservice.service.impl;
 
+import com.rednet.authmanagementservice.config.EnumRoles;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
+import com.rednet.authmanagementservice.exception.InvalidRegistrationActivationCodeException;
 import com.rednet.authmanagementservice.exception.MissingTokenException;
 import com.rednet.authmanagementservice.exception.OccupiedValuesException;
 import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
+import com.rednet.authmanagementservice.exception.RegistrationNotFoundException;
 import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
 import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
 import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
 import com.rednet.authmanagementservice.payload.response.SignupResponseMessage;
 import com.rednet.authmanagementservice.payload.response.SimpleResponseMessage;
 import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
+import com.rednet.authmanagementservice.payload.response.SigninResponseMessage;
 import com.rednet.authmanagementservice.repository.AccountRepository;
+import com.rednet.authmanagementservice.repository.RefreshTokenRepository;
 import com.rednet.authmanagementservice.repository.RegistrationRepository;
+import com.rednet.authmanagementservice.service.SessionService;
 import com.rednet.authmanagementservice.util.ActivationCodeGenerator;
 import com.rednet.authmanagementservice.service.AuthService;
 import com.rednet.authmanagementservice.util.JwtUtil;
+import com.rednet.authmanagementservice.util.SessionPostfixGenerator;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
     private final AccountRepository accountRepository;
+    private final ActivationCodeGenerator activationCodeGenerator;
     private final RegistrationRepository registrationRepository;
     private final PasswordEncoder passwordEncoder;
-    private final String accessTokenCookieName;
     private final JwtUtil jwtUtil;
+    private final String accessTokenCookieName;
     private final String accessTokenCookiePath;
+    private final long accessTokenCookieExpirationS;
+    private final long accessTokenExpirationMs;
+    private final String registrationTokenCookiePath;
+    private final String registrationTokenCookieName;
     private final String refreshTokenCookiePath;
     private final String refreshTokenCookieName;
-    private final ActivationCodeGenerator activationCodeGenerator;
     private final long registrationTokenActivationMs;
+    private final long registrationTokenCookieExpirationS;
     private final long registrationExpirationMs;
+    private final long refreshTokenExpirationMs;
+    private final long refreshTokenCookieExpirationS;
+    private final SessionPostfixGenerator sessionPostfixGenerator;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final SessionService sessionService;
 
-    @Autowired
-    public AuthServiceImpl(
-        AccountRepository accountRepository,
-        RegistrationRepository registrationRepository, PasswordEncoder passwordEncoder,
-        JwtUtil jwtUtil,
-        @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
-        @Value("${rednet.app.access-token-cookie-path}") String accessTokenCookiePath,
-        @Value("${rednet.app.refresh-token-cookie-name}") String refreshTokenCookiePath,
-        @Value("${rednet.app.refresh-token-cookie-path}") String refreshTokenCookieName,
-        ActivationCodeGenerator activationCodeGenerator,
-        @Value("${rednet.app.registration-token-activation-ms}") long registrationTokenActivationMs,
-        @Value("${rednet.app.registration-expiration-ms}") long registrationExpirationMs
-    ) {
-        this.accountRepository = accountRepository;
-        this.registrationRepository = registrationRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.accessTokenCookieName = accessTokenCookieName;
-        this.jwtUtil = jwtUtil;
-        this.refreshTokenCookiePath = refreshTokenCookiePath;
-        this.refreshTokenCookieName = refreshTokenCookieName;
-        this.accessTokenCookiePath = accessTokenCookiePath;
-        this.activationCodeGenerator = activationCodeGenerator;
-        this.registrationTokenActivationMs = registrationTokenActivationMs;
-        this.registrationExpirationMs = registrationExpirationMs;
-    }
 
     @Override
     public ResponseEntity<Object> signup(SignupRequestMessage requestMessage) {
@@ -118,13 +118,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidAccountDataException();
         }
 
-
-
-        ///
-        /// create refresh token
-        ///
-
-        return null;
+        return createSession(account);
     }
 
     @Override
@@ -134,13 +128,22 @@ public class AuthServiceImpl implements AuthService {
         if (cookies == null) throw new MissingTokenException("Missing authentication token");
 
         Cookie tokenCookie = Arrays.stream(cookies)
-            .filter(cookie -> cookie.getName().equals(accessTokenCookieName))
+            .filter(cookie -> cookie.getName().equals(refreshTokenCookieName))
             .findFirst()
             .orElseThrow(() -> new MissingTokenException("Missing authentication token"));
 
-        ///
-        /// delete refresh token
-        ///
+        try {
+            String sessionID = jwtUtil.getRefreshTokenParser().parseClaimsJws(tokenCookie.getValue()).getBody().getId();
+            sessionService.deleteSession(sessionID);
+        } catch (
+            SignatureException |
+            MalformedJwtException |
+            ExpiredJwtException |
+            UnsupportedJwtException |
+            IllegalArgumentException e
+        ) {
+            throw new InvalidTokenException();
+        }
 
         return ResponseEntity.ok()
             .header(
@@ -159,7 +162,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<Object> verifyEmail(VerifyEmailRequestMessage requestMessage) {
-        return null;
+        Registration registration = registrationRepository
+            .find(requestMessage.getRegistrationID())
+            .orElseThrow(() -> new RegistrationNotFoundException(requestMessage.getRegistrationID()));
+
+        if (!registration.getActivationCode().equals(requestMessage.getActivationCode())) {
+            throw new InvalidRegistrationActivationCodeException(requestMessage.getActivationCode());
+        }
+
+        registrationRepository.delete(requestMessage.getRegistrationID());
+
+        Account account = new Account(
+            registration.getUsername(),
+            registration.getPassword(),
+            registration.getEmail(),
+            registration.getSecretWord(),
+            new HashSet<>(){{add(EnumRoles.ROLE_USER);}}
+        );
+
+        accountRepository.save(account);
+
+        return createSession(account);
     }
 
     @Override
@@ -191,12 +214,63 @@ public class AuthServiceImpl implements AuthService {
             .build();
     }
 
-    private ResponseCookie generateRegistrationCookie(String value) {
-        return ResponseCookie.from()
-            .value(value)
-            .path(path)
-            .maxAge(0)
+    private ResponseCookie generateAccessTokenCookie(String value) {
+        return ResponseCookie.from(accessTokenCookieName, value)
+            .path(accessTokenCookiePath)
+            .maxAge(accessTokenCookieExpirationS)
+            .httpOnly(true)
             .build();
     }
 
+    private ResponseCookie generateRefreshTokenCookie(String value) {
+        return ResponseCookie.from(refreshTokenCookieName, value)
+            .path(refreshTokenCookiePath)
+            .maxAge(refreshTokenCookieExpirationS)
+            .httpOnly(true)
+            .build();
+    }
+
+    private ResponseCookie generateRegistrationCookie(String value) {
+        return ResponseCookie.from(registrationTokenCookieName, value)
+            .path(registrationTokenCookiePath)
+            .maxAge(registrationTokenCookieExpirationS)
+            .httpOnly(true)
+            .build();
+    }
+
+    private String generateRefreshToken(Account account, String sessionID) {
+        return jwtUtil.generateRefreshTokenBuilder()
+            .setSubject(String.valueOf(account.getID()))
+            .setId(sessionID)
+            .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
+            .claim("roles", account.getRoles().toArray())
+            .compact();
+    }
+
+    private String generateAccessToken(Account account, String sessionID) {
+        return jwtUtil.generateAccessTokenBuilder()
+            .setSubject(String.valueOf(account.getID()))
+            .setId(sessionID)
+            .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
+            .claim("roles",account.getRoles().toArray())
+            .compact();
+    }
+
+    private ResponseEntity<Object> createSession(Account account) {
+        String sessionID = sessionService.createSession(String.valueOf(account.getID()));;
+        String refreshToken = generateRefreshToken(account, sessionID);
+
+        refreshTokenRepository.save(sessionID, refreshToken);
+
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.COOKIE,
+                generateAccessTokenCookie(generateAccessToken(account,sessionID)).toString())
+            .header(
+                HttpHeaders.COOKIE,
+                generateRefreshTokenCookie(refreshToken).toString())
+            .body(new SigninResponseMessage(
+                account.getID(),
+                account.getRoles()));
+    }
 }

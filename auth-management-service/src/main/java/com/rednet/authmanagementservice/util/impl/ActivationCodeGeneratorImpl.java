@@ -7,11 +7,11 @@ import java.util.Random;
 
 @Component
 public class ActivationCodeGeneratorImpl implements ActivationCodeGenerator {
-    private final int activationCodeMin = 100000;
-    private final int activationCodeMax = 1000000;
+    private final int rangeMin = 100000;
+    private final int rangeMax = 1000000;
     private final Random activationCodeRandom = new Random();
     @Override
     public int generate() {
-        return activationCodeRandom.nextInt(activationCodeMax - activationCodeMin) + activationCodeMin;
+        return activationCodeRandom.nextInt(rangeMax - rangeMin) + rangeMin;
     }
 }

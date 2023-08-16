@@ -24,8 +24,8 @@ public class JwtUtilImpl implements JwtUtil {
     public JwtUtilImpl(
         @Value("${rednet.app.access-token-secret-key}") String accessTokenSecretKey,
         @Value("${rednet.app.refresh-token-secret-key}") String refreshTokenSecretKey,
-        @Value("${rednet.app.registration-refresh-token-secret-key}") String registrationTokenSecretKey,
-        @Value("${rednet.app.password-encoder-strength}") String authTokenIssuer
+        @Value("${rednet.app.registration-token-secret-key}") String registrationTokenSecretKey,
+        @Value("${rednet.app.auth-token-issuer}") String authTokenIssuer
     ) {
         this.accessTokenSecretKey = accessTokenSecretKey;
         this.refreshTokenSecretKey = refreshTokenSecretKey;

@@ -4,9 +4,10 @@ import jakarta.annotation.Nonnull;
 
 import java.util.List;
 
-public class OccupiedValuesException extends RuntimeException {
-    private final List<String> messages;
-    public OccupiedValuesException(@Nonnull List<String> messages) {
+public abstract class HandableException extends RuntimeException{
+    List<String> messages;
+
+    public HandableException(@Nonnull List<String> messages) {
         this.messages = messages;
     }
 

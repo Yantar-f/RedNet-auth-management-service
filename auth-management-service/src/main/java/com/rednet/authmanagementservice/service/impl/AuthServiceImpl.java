@@ -1,13 +1,15 @@
 package com.rednet.authmanagementservice.service.impl;
 
 import com.rednet.authmanagementservice.config.EnumRoles;
+import com.rednet.authmanagementservice.config.EnumTokenType;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
-import com.rednet.authmanagementservice.exception.InvalidRegistrationActivationCodeException;
-import com.rednet.authmanagementservice.exception.MissingTokenException;
-import com.rednet.authmanagementservice.exception.OccupiedValuesException;
-import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
-import com.rednet.authmanagementservice.exception.RegistrationNotFoundException;
+import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationActivationCodeException;
+import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
+import com.rednet.authmanagementservice.exception.impl.MissingTokenException;
+import com.rednet.authmanagementservice.exception.impl.OccupiedValuesException;
+import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
+import com.rednet.authmanagementservice.exception.impl.RegistrationNotFoundException;
 import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
 import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
 import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
@@ -30,14 +32,11 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -49,9 +48,12 @@ import java.util.UUID;
 @Service
 public class AuthServiceImpl implements AuthService {
     private final AccountRepository accountRepository;
-    private final ActivationCodeGenerator activationCodeGenerator;
     private final RegistrationRepository registrationRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final ActivationCodeGenerator activationCodeGenerator;
+    private final SessionPostfixGenerator sessionPostfixGenerator;
     private final PasswordEncoder passwordEncoder;
+    private final SessionService sessionService;
     private final JwtUtil jwtUtil;
     private final String accessTokenCookieName;
     private final String accessTokenCookiePath;
@@ -59,28 +61,71 @@ public class AuthServiceImpl implements AuthService {
     private final long accessTokenExpirationMs;
     private final String registrationTokenCookiePath;
     private final String registrationTokenCookieName;
+    private final long registrationTokenActivationMs;
+    private final long registrationExpirationMs;
+    private final long registrationTokenCookieExpirationS;
     private final String refreshTokenCookiePath;
     private final String refreshTokenCookieName;
-    private final long registrationTokenActivationMs;
-    private final long registrationTokenCookieExpirationS;
-    private final long registrationExpirationMs;
     private final long refreshTokenExpirationMs;
     private final long refreshTokenCookieExpirationS;
-    private final SessionPostfixGenerator sessionPostfixGenerator;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final SessionService sessionService;
+
+    public AuthServiceImpl(
+        AccountRepository accountRepository,
+        RegistrationRepository registrationRepository,
+        RefreshTokenRepository refreshTokenRepository,
+        ActivationCodeGenerator activationCodeGenerator,
+        SessionPostfixGenerator sessionPostfixGenerator,
+        PasswordEncoder passwordEncoder,
+        SessionService sessionService,
+        JwtUtil jwtUtil,
+        @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
+        @Value("${rednet.app.access-token-cookie-path}") String accessTokenCookiePath,
+        @Value("${rednet.app.access-token-cookie-expiration-s}") long accessTokenCookieExpirationS,
+        @Value("${rednet.app.access-token-expiration-ms}") long accessTokenExpirationMs,
+        @Value("${rednet.app.registration-token-cookie-path}") String registrationTokenCookiePath,
+        @Value("${rednet.app.registration-token-cookie-name}") String registrationTokenCookieName,
+        @Value("${rednet.app.registration-token-activation-ms}") long registrationTokenActivationMs,
+        @Value("${rednet.app.registration-token-expiration-ms}") long registrationExpirationMs,
+        @Value("${rednet.app.registration-token-cookie-expiration-s}") long registrationTokenCookieExpirationS,
+        @Value("${rednet.app.refresh-token-cookie-path}") String refreshTokenCookiePath,
+        @Value("${rednet.app.refresh-token-cookie-name}") String refreshTokenCookieName,
+        @Value("${rednet.app.refresh-token-expiration-ms}") long refreshTokenExpirationMs,
+        @Value("${rednet.app.refresh-token-cookie-expiration-s}") long refreshTokenCookieExpirationS
+    ) {
+        this.accountRepository = accountRepository;
+        this.registrationRepository = registrationRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.activationCodeGenerator = activationCodeGenerator;
+        this.sessionPostfixGenerator = sessionPostfixGenerator;
+        this.passwordEncoder = passwordEncoder;
+        this.sessionService = sessionService;
+        this.jwtUtil = jwtUtil;
+        this.accessTokenCookieName = accessTokenCookieName;
+        this.accessTokenCookiePath = accessTokenCookiePath;
+        this.accessTokenCookieExpirationS = accessTokenCookieExpirationS;
+        this.accessTokenExpirationMs = accessTokenExpirationMs;
+        this.registrationTokenCookiePath = registrationTokenCookiePath;
+        this.registrationTokenCookieName = registrationTokenCookieName;
+        this.registrationTokenActivationMs = registrationTokenActivationMs;
+        this.registrationExpirationMs = registrationExpirationMs;
+        this.registrationTokenCookieExpirationS = registrationTokenCookieExpirationS;
+        this.refreshTokenCookiePath = refreshTokenCookiePath;
+        this.refreshTokenCookieName = refreshTokenCookieName;
+        this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+        this.refreshTokenCookieExpirationS = refreshTokenCookieExpirationS;
+    }
 
 
     @Override
     public ResponseEntity<Object> signup(SignupRequestMessage requestMessage) {
         Account account = accountRepository
-            .findByUsernameOrEmail(requestMessage.getUsername(), requestMessage.getEmail())
+            .findByUsernameOrEmail(requestMessage.username(), requestMessage.email())
             .orElse(null);
 
         if (account != null) {
             throw new OccupiedValuesException(new ArrayList<>(){{
-                if (requestMessage.getUsername().equals(account.getUsername())) add("Occupied value: username");
-                if (requestMessage.getEmail().equals(account.getEmail())) add("Occupied value: email");
+                if (requestMessage.username().equals(account.getUsername())) add("Occupied value: username");
+                if (requestMessage.email().equals(account.getEmail())) add("Occupied value: email");
             }});
         }
 
@@ -95,10 +140,10 @@ public class AuthServiceImpl implements AuthService {
 
         registrationRepository.save(registrationID, new Registration(
             String.valueOf(activationCode),
-            requestMessage.getUsername(),
-            passwordEncoder.encode(requestMessage.getPassword()),
-            requestMessage.getEmail(),
-            requestMessage.getSecretWord()
+            requestMessage.username(),
+            passwordEncoder.encode(requestMessage.password()),
+            requestMessage.email(),
+            requestMessage.secretWord()
         ));
 
         return ResponseEntity.ok()
@@ -111,10 +156,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<Object> signin(SigninRequestMessage requestMessage) {
         Account account = accountRepository
-            .findByUsernameOrEmail(requestMessage.getUserIdentifier(), requestMessage.getUserIdentifier())
+            .findEagerByUsernameOrEmail(requestMessage.userIdentifier(), requestMessage.userIdentifier())
             .orElseThrow(InvalidAccountDataException::new);
 
-        if (!passwordEncoder.matches(requestMessage.getPassword(), account.getPassword())) {
+        if (!passwordEncoder.matches(requestMessage.password(), account.getPassword())) {
             throw new InvalidAccountDataException();
         }
 
@@ -132,45 +177,34 @@ public class AuthServiceImpl implements AuthService {
             .findFirst()
             .orElseThrow(() -> new MissingTokenException("Missing authentication token"));
 
-        try {
-            String sessionID = jwtUtil.getRefreshTokenParser().parseClaimsJws(tokenCookie.getValue()).getBody().getId();
-            sessionService.deleteSession(sessionID);
-        } catch (
-            SignatureException |
-            MalformedJwtException |
-            ExpiredJwtException |
-            UnsupportedJwtException |
-            IllegalArgumentException e
-        ) {
-            throw new InvalidTokenException();
-        }
-
-        return ResponseEntity.ok()
-            .header(
-                HttpHeaders.COOKIE,
-                generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
-            .header(
-                HttpHeaders.COOKIE,
-                generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
-            .body(new SimpleResponseMessage("Successful logout"));
+        return deleteSession(tokenCookie.getValue());
     }
 
     @Override
     public ResponseEntity<Object> refreshTokens(HttpServletRequest request) {
-        return null;
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) throw new MissingTokenException("Missing authentication token");
+
+        Cookie tokenCookie = Arrays.stream(cookies)
+            .filter(cookie -> cookie.getName().equals(refreshTokenCookieName))
+            .findFirst()
+            .orElseThrow(() -> new MissingTokenException("Missing authentication token"));
+
+        return refreshSession(tokenCookie.getValue());
     }
 
     @Override
     public ResponseEntity<Object> verifyEmail(VerifyEmailRequestMessage requestMessage) {
         Registration registration = registrationRepository
-            .find(requestMessage.getRegistrationID())
-            .orElseThrow(() -> new RegistrationNotFoundException(requestMessage.getRegistrationID()));
+            .find(requestMessage.registrationID())
+            .orElseThrow(() -> new RegistrationNotFoundException(requestMessage.registrationID()));
 
-        if (!registration.getActivationCode().equals(requestMessage.getActivationCode())) {
-            throw new InvalidRegistrationActivationCodeException(requestMessage.getActivationCode());
+        if (!registration.getActivationCode().equals(requestMessage.activationCode())) {
+            throw new InvalidRegistrationActivationCodeException(requestMessage.activationCode());
         }
 
-        registrationRepository.delete(requestMessage.getRegistrationID());
+        registrationRepository.delete(requestMessage.registrationID());
 
         Account account = new Account(
             registration.getUsername(),
@@ -193,14 +227,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<Object> changePassword(ChangePasswordRequestMessage requestMessage) {
         Account account = accountRepository
-            .findByUsernameOrEmail(requestMessage.getUserIdentifier(), requestMessage.getUserIdentifier())
+            .findByUsernameOrEmail(requestMessage.userIdentifier(), requestMessage.userIdentifier())
             .orElseThrow(InvalidAccountDataException::new);
 
-        if (!passwordEncoder.matches(requestMessage.getOldPassword(), account.getPassword())) {
+        if (!passwordEncoder.matches(requestMessage.oldPassword(), account.getPassword())) {
             throw new InvalidAccountDataException();
         }
 
-        account.setPassword(passwordEncoder.encode(requestMessage.getNewPassword()));
+        account.setPassword(passwordEncoder.encode(requestMessage.newPassword()));
 
         accountRepository.save(account);
 
@@ -238,39 +272,96 @@ public class AuthServiceImpl implements AuthService {
             .build();
     }
 
-    private String generateRefreshToken(Account account, String sessionID) {
+    private String generateRefreshToken(String userID, String[] roles, String sessionID) {
         return jwtUtil.generateRefreshTokenBuilder()
-            .setSubject(String.valueOf(account.getID()))
+            .setSubject(String.valueOf(userID))
             .setId(sessionID)
             .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
-            .claim("roles", account.getRoles().toArray())
+            .claim("roles", roles)
             .compact();
     }
 
-    private String generateAccessToken(Account account, String sessionID) {
+    private String generateAccessToken(String userID, String[] roles, String sessionID) {
         return jwtUtil.generateAccessTokenBuilder()
-            .setSubject(String.valueOf(account.getID()))
+            .setSubject(userID)
             .setId(sessionID)
             .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
-            .claim("roles",account.getRoles().toArray())
+            .claim("roles",roles)
             .compact();
     }
 
     private ResponseEntity<Object> createSession(Account account) {
-        String sessionID = sessionService.createSession(String.valueOf(account.getID()));;
-        String refreshToken = generateRefreshToken(account, sessionID);
+        String sessionID = sessionService.createSession(String.valueOf(account.getID()));
+        String userID = String.valueOf(account.getID());
+        String[] roles = (String[]) account.getRoles().stream().map(Enum::name).toArray();
+        String refreshToken = generateRefreshToken(userID, roles, sessionID);
 
         refreshTokenRepository.save(sessionID, refreshToken);
 
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.COOKIE,
-                generateAccessTokenCookie(generateAccessToken(account,sessionID)).toString())
+                generateAccessTokenCookie(generateAccessToken(userID, roles, sessionID)).toString())
             .header(
                 HttpHeaders.COOKIE,
                 generateRefreshTokenCookie(refreshToken).toString())
             .body(new SigninResponseMessage(
                 account.getID(),
                 account.getRoles()));
+    }
+
+    private ResponseEntity<Object> deleteSession(String refreshToken) {
+        try {
+            String sessionID = jwtUtil.getRefreshTokenParser().parseClaimsJws(refreshToken).getBody().getId();
+            sessionService.deleteSession(sessionID);
+
+            return ResponseEntity.ok()
+                .header(
+                    HttpHeaders.COOKIE,
+                    generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
+                .header(
+                    HttpHeaders.COOKIE,
+                    generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
+                .body(new SimpleResponseMessage("Successful logout"));
+        } catch (
+            SignatureException |
+            MalformedJwtException |
+            ExpiredJwtException |
+            UnsupportedJwtException |
+            IllegalArgumentException e
+        ) {
+            throw new InvalidTokenException(EnumTokenType.REFRESH_TOKEN);
+        }
+    }
+
+    private ResponseEntity<Object> refreshSession(String refreshToken) {
+        try {
+            Claims claims = jwtUtil.getRefreshTokenParser().parseClaimsJws(refreshToken).getBody();
+            String sessionID = claims.getId();
+
+            sessionService.refreshSession(sessionID);
+
+            String newRefreshToken = jwtUtil.generateRefreshTokenBuilder()
+                .setClaims(claims)
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
+                .compact();
+
+            return ResponseEntity.ok()
+                .header(
+                    HttpHeaders.COOKIE,
+                    generateAccessTokenCookie(generateAccessToken(claims.getSubject(), (String[]) claims.get("roles"), sessionID)).toString())
+                .header(
+                    HttpHeaders.COOKIE,
+                    generateRefreshTokenCookie(refreshToken).toString())
+                .body(new SimpleResponseMessage("successful refresh token pair"));
+        } catch (
+            SignatureException |
+            MalformedJwtException |
+            ExpiredJwtException |
+            UnsupportedJwtException |
+            IllegalArgumentException e
+        ) {
+            throw new InvalidTokenException(EnumTokenType.REFRESH_TOKEN);
+        }
     }
 }

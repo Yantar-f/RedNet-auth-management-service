@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -129,17 +130,12 @@ public class AuthServiceImpl implements AuthService {
             }});
         }
 
-        int activationCode = activationCodeGenerator.generate();
+        String activationCode = String.valueOf(activationCodeGenerator.generate());
         String registrationID = UUID.randomUUID().toString();
-        String registrationToken = jwtUtil.generateRegistrationTokenBuilder()
-            .setSubject(registrationID)
-            .setNotBefore(new Date(System.currentTimeMillis() + registrationTokenActivationMs))
-            .setExpiration(new Date(System.currentTimeMillis() + registrationExpirationMs))
-            .compact();
-
+        String registrationToken = generateRegistrationToken(registrationID);
 
         registrationRepository.save(registrationID, new Registration(
-            String.valueOf(activationCode),
+            activationCode,
             requestMessage.username(),
             passwordEncoder.encode(requestMessage.password()),
             requestMessage.email(),
@@ -148,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
 
         return ResponseEntity.ok()
             .header(
-                HttpHeaders.COOKIE,
+                HttpHeaders.SET_COOKIE,
                 generateRegistrationCookie(registrationToken).toString())
             .body(new SignupResponseMessage(registrationID));
     }
@@ -184,12 +180,12 @@ public class AuthServiceImpl implements AuthService {
     public ResponseEntity<Object> refreshTokens(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
 
-        if (cookies == null) throw new MissingTokenException("Missing authentication token");
+        if (cookies == null) throw new MissingTokenException("Missing refresh token");
 
         Cookie tokenCookie = Arrays.stream(cookies)
             .filter(cookie -> cookie.getName().equals(refreshTokenCookieName))
             .findFirst()
-            .orElseThrow(() -> new MissingTokenException("Missing authentication token"));
+            .orElseThrow(() -> new MissingTokenException("Missing refresh token"));
 
         return refreshSession(tokenCookie.getValue());
     }
@@ -220,8 +216,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<Object> resendEmailVerification(HttpServletRequest token) {
-        return null;
+    public ResponseEntity<Object> resendEmailVerification(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) throw new MissingTokenException("Missing registration token");
+
+        Cookie tokenCookie = Arrays.stream(cookies)
+            .filter(cookie -> cookie.getName().equals(registrationTokenCookieName))
+            .findFirst()
+            .orElseThrow(() -> new MissingTokenException("Missing registration token"));
+        String registrationID = jwtUtil.getRegistrationTokenParser().parseClaimsJws(tokenCookie.getValue())
+            .getBody().getSubject();
+        Registration registration = registrationRepository
+            .find(registrationID)
+            .orElseThrow(() -> new RegistrationNotFoundException(registrationID));
+        String newActivationCode = String.valueOf(activationCodeGenerator.generate());
+        String newRegistrationToken = generateRegistrationToken(registrationID);
+
+        registration.setActivationCode(newActivationCode);
+
+        registrationRepository.save(registrationID, registration);
+
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateRegistrationCookie(newRegistrationToken).toString())
+            .body(new SimpleResponseMessage("email verification process updated"));
     }
 
     @Override
@@ -248,24 +268,24 @@ public class AuthServiceImpl implements AuthService {
             .build();
     }
 
-    private ResponseCookie generateAccessTokenCookie(String value) {
-        return ResponseCookie.from(accessTokenCookieName, value)
+    private ResponseCookie generateAccessTokenCookie(String token) {
+        return ResponseCookie.from(accessTokenCookieName, token)
             .path(accessTokenCookiePath)
             .maxAge(accessTokenCookieExpirationS)
             .httpOnly(true)
             .build();
     }
 
-    private ResponseCookie generateRefreshTokenCookie(String value) {
-        return ResponseCookie.from(refreshTokenCookieName, value)
+    private ResponseCookie generateRefreshTokenCookie(String token) {
+        return ResponseCookie.from(refreshTokenCookieName, token)
             .path(refreshTokenCookiePath)
             .maxAge(refreshTokenCookieExpirationS)
             .httpOnly(true)
             .build();
     }
 
-    private ResponseCookie generateRegistrationCookie(String value) {
-        return ResponseCookie.from(registrationTokenCookieName, value)
+    private ResponseCookie generateRegistrationCookie(String token) {
+        return ResponseCookie.from(registrationTokenCookieName, token)
             .path(registrationTokenCookiePath)
             .maxAge(registrationTokenCookieExpirationS)
             .httpOnly(true)
@@ -290,9 +310,17 @@ public class AuthServiceImpl implements AuthService {
             .compact();
     }
 
+    private String generateRegistrationToken(String registrationID) {
+        return jwtUtil.generateRegistrationTokenBuilder()
+            .setSubject(registrationID)
+            .setNotBefore(new Date(System.currentTimeMillis() + registrationTokenActivationMs))
+            .setExpiration(new Date(System.currentTimeMillis() + registrationExpirationMs))
+            .compact();
+    }
+
     private ResponseEntity<Object> createSession(Account account) {
-        String sessionID = sessionService.createSession(String.valueOf(account.getID()));
         String userID = String.valueOf(account.getID());
+        String sessionID = sessionService.createSession(userID);
         String[] roles = (String[]) account.getRoles().stream().map(Enum::name).toArray();
         String refreshToken = generateRefreshToken(userID, roles, sessionID);
 
@@ -300,14 +328,14 @@ public class AuthServiceImpl implements AuthService {
 
         return ResponseEntity.ok()
             .header(
-                HttpHeaders.COOKIE,
+                HttpHeaders.SET_COOKIE,
                 generateAccessTokenCookie(generateAccessToken(userID, roles, sessionID)).toString())
             .header(
-                HttpHeaders.COOKIE,
+                HttpHeaders.SET_COOKIE,
                 generateRefreshTokenCookie(refreshToken).toString())
             .body(new SigninResponseMessage(
-                account.getID(),
-                account.getRoles()));
+                userID,
+                roles));
     }
 
     private ResponseEntity<Object> deleteSession(String refreshToken) {
@@ -317,10 +345,10 @@ public class AuthServiceImpl implements AuthService {
 
             return ResponseEntity.ok()
                 .header(
-                    HttpHeaders.COOKIE,
+                    HttpHeaders.SET_COOKIE,
                     generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
                 .header(
-                    HttpHeaders.COOKIE,
+                    HttpHeaders.SET_COOKIE,
                     generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
                 .body(new SimpleResponseMessage("Successful logout"));
         } catch (
@@ -348,11 +376,11 @@ public class AuthServiceImpl implements AuthService {
 
             return ResponseEntity.ok()
                 .header(
-                    HttpHeaders.COOKIE,
+                    HttpHeaders.SET_COOKIE,
                     generateAccessTokenCookie(generateAccessToken(claims.getSubject(), (String[]) claims.get("roles"), sessionID)).toString())
                 .header(
-                    HttpHeaders.COOKIE,
-                    generateRefreshTokenCookie(refreshToken).toString())
+                    HttpHeaders.SET_COOKIE,
+                    generateRefreshTokenCookie(newRefreshToken).toString())
                 .body(new SimpleResponseMessage("successful refresh token pair"));
         } catch (
             SignatureException |

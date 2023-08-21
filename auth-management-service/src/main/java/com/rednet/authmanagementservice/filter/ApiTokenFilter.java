@@ -13,7 +13,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,17 +25,16 @@ import java.io.IOException;
 import java.util.Arrays;
 
 @Component
-public class AuthTokenFilter extends OncePerRequestFilter {
-    private final String accessTokenCookieName;
-    private final JwtParser accessTokenParser;
+public class ApiTokenFilter extends OncePerRequestFilter {
+    private final String apiTokenCookieName;
+    private final JwtParser apiTokenParser;
 
-    @Autowired
-    public AuthTokenFilter(
-        @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
+    public ApiTokenFilter(
+        @Value("${rednet.app.api-token-cookie-name}") String apiTokenCookieName,
         JwtUtil jwtUtil
     ) {
-        this.accessTokenCookieName = accessTokenCookieName;
-        this.accessTokenParser = jwtUtil.getAccessTokenParser();
+        this.apiTokenCookieName = apiTokenCookieName;
+        this.apiTokenParser = jwtUtil.getApiTokenParser();
     }
 
     @Override
@@ -52,21 +50,21 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        Cookie accessTokenCookie = Arrays.stream(cookies)
-            .filter(cookie -> cookie.getName().equals(accessTokenCookieName))
+        Cookie apiTokenCookie = Arrays.stream(cookies)
+            .filter(cookie -> cookie.getName().equals(apiTokenCookieName))
             .findFirst().orElse(null);
 
-        if (accessTokenCookie == null) {
+        if (apiTokenCookie == null) {
             filterChain.doFilter(request,response);
             return;
         }
 
         try {
-            Claims claims = accessTokenParser.parseClaimsJws(accessTokenCookie.getValue()).getBody();
+            Claims claims = apiTokenParser.parseClaimsJws(apiTokenCookie.getValue()).getBody();
             UsernamePasswordAuthenticationToken contextAuthToken =
                 new UsernamePasswordAuthenticationToken(
                     claims.getSubject(),
-                    null,
+                    apiTokenCookie.getValue(),
                     Arrays.stream((String[]) claims.get("roles"))
                         .map(SimpleGrantedAuthority::new)
                         .toList()

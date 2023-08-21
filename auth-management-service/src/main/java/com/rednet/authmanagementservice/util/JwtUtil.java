@@ -7,7 +7,6 @@ public interface JwtUtil {
     JwtBuilder generateAccessTokenBuilder();
     JwtBuilder generateRefreshTokenBuilder();
     JwtBuilder generateRegistrationTokenBuilder();
-    JwtParser getAccessTokenParser();
-    JwtParser getRefreshTokenParser();
     JwtParser getRegistrationTokenParser();
+    JwtParser getApiTokenParser();
 }

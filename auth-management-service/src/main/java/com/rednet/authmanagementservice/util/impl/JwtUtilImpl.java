@@ -13,32 +13,27 @@ import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 
 @Component
 public class JwtUtilImpl implements JwtUtil {
-    private final String accessTokenSecretKey;
+    private final String apiTokenSecretKey;
     private final String refreshTokenSecretKey;
     private final String registrationTokenSecretKey;
     private final String authTokenIssuer;
-    private final JwtParser accessTokenParser;
-    private final JwtParser refreshTokenParser;
+    private final JwtParser apiTokenParser;
     private final JwtParser registrationTokenParser;
 
     public JwtUtilImpl(
-        @Value("${rednet.app.access-token-secret-key}") String accessTokenSecretKey,
+        @Value("${rednet.app.api-token-secret-key}") String apiTokenSecretKey,
         @Value("${rednet.app.refresh-token-secret-key}") String refreshTokenSecretKey,
         @Value("${rednet.app.registration-token-secret-key}") String registrationTokenSecretKey,
-        @Value("${rednet.app.auth-token-issuer}") String authTokenIssuer
+        @Value("${rednet.app.auth-token-issuer}") String authTokenIssuer,
+        @Value("${rednet.app.api-token-issuer}") String apiTokenIssuer
     ) {
-        this.accessTokenSecretKey = accessTokenSecretKey;
+        this.apiTokenSecretKey = apiTokenSecretKey;
         this.refreshTokenSecretKey = refreshTokenSecretKey;
         this.registrationTokenSecretKey = registrationTokenSecretKey;
         this.authTokenIssuer = authTokenIssuer;
-        this.accessTokenParser = Jwts.parserBuilder()
-            .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessTokenSecretKey)))
-            .requireIssuer(authTokenIssuer)
-            .setAllowedClockSkewSeconds(5)
-            .build();
-        this.refreshTokenParser = Jwts.parserBuilder()
-            .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshTokenSecretKey)))
-            .requireIssuer(authTokenIssuer)
+        this.apiTokenParser = Jwts.parserBuilder()
+            .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(apiTokenSecretKey)))
+            .requireIssuer(apiTokenIssuer)
             .setAllowedClockSkewSeconds(5)
             .build();
         this.registrationTokenParser = Jwts.parserBuilder()
@@ -52,7 +47,7 @@ public class JwtUtilImpl implements JwtUtil {
     public JwtBuilder generateAccessTokenBuilder() {
         return Jwts.builder()
             .setIssuer(authTokenIssuer)
-            .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessTokenSecretKey)), HS256);
+            .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(apiTokenSecretKey)), HS256);
     }
 
     @Override
@@ -70,17 +65,12 @@ public class JwtUtilImpl implements JwtUtil {
     }
 
     @Override
-    public JwtParser getAccessTokenParser() {
-        return accessTokenParser;
-    }
-
-    @Override
-    public JwtParser getRefreshTokenParser() {
-        return refreshTokenParser;
-    }
-
-    @Override
     public JwtParser getRegistrationTokenParser() {
         return registrationTokenParser;
+    }
+
+    @Override
+    public JwtParser getApiTokenParser() {
+        return apiTokenParser;
     }
 }

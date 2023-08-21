@@ -1,12 +1,16 @@
 package com.rednet.authmanagementservice.entity;
 
-public class Registration {
+
+import java.io.Serializable;
+
+public class Registration implements Serializable {
     private String activationCode;
     private String username;
     private String password;
     private String email;
     private String secretWord;
 
+    public Registration() {}
     public Registration(
         String activationCode,
         String username,

@@ -1,11 +1,11 @@
 package com.rednet.authmanagementservice.service.impl;
 
 import com.rednet.authmanagementservice.config.EnumRoles;
-import com.rednet.authmanagementservice.config.EnumTokenType;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
+import com.rednet.authmanagementservice.entity.Role;
+import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationActivationCodeException;
-import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
 import com.rednet.authmanagementservice.exception.impl.MissingTokenException;
 import com.rednet.authmanagementservice.exception.impl.OccupiedValuesException;
 import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
@@ -18,18 +18,12 @@ import com.rednet.authmanagementservice.payload.response.SimpleResponseMessage;
 import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
 import com.rednet.authmanagementservice.payload.response.SigninResponseMessage;
 import com.rednet.authmanagementservice.repository.AccountRepository;
-import com.rednet.authmanagementservice.repository.RefreshTokenRepository;
 import com.rednet.authmanagementservice.repository.RegistrationRepository;
+import com.rednet.authmanagementservice.service.EmailService;
 import com.rednet.authmanagementservice.service.SessionService;
 import com.rednet.authmanagementservice.util.ActivationCodeGenerator;
 import com.rednet.authmanagementservice.service.AuthService;
 import com.rednet.authmanagementservice.util.JwtUtil;
-import com.rednet.authmanagementservice.util.SessionPostfixGenerator;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,18 +37,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
     private final AccountRepository accountRepository;
     private final RegistrationRepository registrationRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final ActivationCodeGenerator activationCodeGenerator;
-    private final SessionPostfixGenerator sessionPostfixGenerator;
     private final PasswordEncoder passwordEncoder;
     private final SessionService sessionService;
+    private final EmailService emailService;
     private final JwtUtil jwtUtil;
     private final String accessTokenCookieName;
     private final String accessTokenCookiePath;
@@ -73,11 +65,10 @@ public class AuthServiceImpl implements AuthService {
     public AuthServiceImpl(
         AccountRepository accountRepository,
         RegistrationRepository registrationRepository,
-        RefreshTokenRepository refreshTokenRepository,
         ActivationCodeGenerator activationCodeGenerator,
-        SessionPostfixGenerator sessionPostfixGenerator,
         PasswordEncoder passwordEncoder,
         SessionService sessionService,
+        EmailService emailService,
         JwtUtil jwtUtil,
         @Value("${rednet.app.access-token-cookie-name}") String accessTokenCookieName,
         @Value("${rednet.app.access-token-cookie-path}") String accessTokenCookiePath,
@@ -95,9 +86,7 @@ public class AuthServiceImpl implements AuthService {
     ) {
         this.accountRepository = accountRepository;
         this.registrationRepository = registrationRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
         this.activationCodeGenerator = activationCodeGenerator;
-        this.sessionPostfixGenerator = sessionPostfixGenerator;
         this.passwordEncoder = passwordEncoder;
         this.sessionService = sessionService;
         this.jwtUtil = jwtUtil;
@@ -114,25 +103,23 @@ public class AuthServiceImpl implements AuthService {
         this.refreshTokenCookieName = refreshTokenCookieName;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
         this.refreshTokenCookieExpirationS = refreshTokenCookieExpirationS;
+        this.emailService = emailService;
     }
 
 
     @Override
     public ResponseEntity<Object> signup(SignupRequestMessage requestMessage) {
-        Account account = accountRepository
-            .findByUsernameOrEmail(requestMessage.username(), requestMessage.email())
-            .orElse(null);
-
-        if (account != null) {
+        accountRepository.findByUsernameOrEmail(requestMessage.username(), requestMessage.email()).ifPresent(acc -> {
             throw new OccupiedValuesException(new ArrayList<>(){{
-                if (requestMessage.username().equals(account.getUsername())) add("Occupied value: username");
-                if (requestMessage.email().equals(account.getEmail())) add("Occupied value: email");
+                if (requestMessage.username().equals(acc.getUsername())) add("Occupied value: username");
+                if (requestMessage.email().equals(acc.getEmail())) add("Occupied value: email");
             }});
-        }
+        });
 
-        String activationCode = String.valueOf(activationCodeGenerator.generate());
-        String registrationID = UUID.randomUUID().toString();
-        String registrationToken = generateRegistrationToken(registrationID);
+        String
+            activationCode = String.valueOf(activationCodeGenerator.generate()),
+            registrationID = UUID.randomUUID().toString(),
+            registrationToken = generateRegistrationToken(registrationID);
 
         registrationRepository.save(registrationID, new Registration(
             activationCode,
@@ -141,6 +128,8 @@ public class AuthServiceImpl implements AuthService {
             requestMessage.email(),
             requestMessage.secretWord()
         ));
+
+        emailService.sendRegistrationActivationMessage(requestMessage.email(), activationCode);
 
         return ResponseEntity.ok()
             .header(
@@ -202,17 +191,20 @@ public class AuthServiceImpl implements AuthService {
 
         registrationRepository.delete(requestMessage.registrationID());
 
-        Account account = new Account(
+        accountRepository.findByUsernameOrEmail(registration.getUsername(), registration.getEmail()).ifPresent(acc -> {
+            throw new OccupiedValuesException(new ArrayList<>(){{
+                if (registration.getUsername().equals(acc.getUsername())) add("Occupied value: username");
+                if (registration.getEmail().equals(acc.getEmail())) add("Occupied value: email");
+            }});
+        });
+
+        return createSession(accountRepository.save(new Account(
             registration.getUsername(),
             registration.getPassword(),
             registration.getEmail(),
             registration.getSecretWord(),
-            new HashSet<>(){{add(EnumRoles.ROLE_USER);}}
-        );
-
-        accountRepository.save(account);
-
-        return createSession(account);
+            new HashSet<>(){{add(new Role(EnumRoles.ROLE_USER));}}
+        )));
     }
 
     @Override
@@ -231,16 +223,17 @@ public class AuthServiceImpl implements AuthService {
             .find(registrationID)
             .orElseThrow(() -> new RegistrationNotFoundException(registrationID));
         String newActivationCode = String.valueOf(activationCodeGenerator.generate());
-        String newRegistrationToken = generateRegistrationToken(registrationID);
 
         registration.setActivationCode(newActivationCode);
 
         registrationRepository.save(registrationID, registration);
 
+        emailService.sendRegistrationActivationMessage(registration.getEmail(), newActivationCode);
+
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.SET_COOKIE,
-                generateRegistrationCookie(newRegistrationToken).toString())
+                generateRegistrationCookie(generateRegistrationToken(registrationID)).toString())
             .body(new SimpleResponseMessage("email verification process updated"));
     }
 
@@ -259,6 +252,47 @@ public class AuthServiceImpl implements AuthService {
         accountRepository.save(account);
 
         return ResponseEntity.ok().body(new SimpleResponseMessage("password updated"));
+    }
+
+    private ResponseEntity<Object> createSession(Account account) {
+        String[] roles = (String[]) account.getRoles().stream().map(Role::getDesignation).toArray();
+        String userID = String.valueOf(account.getID());
+        Session session = sessionService.createSession(userID, roles);
+
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateAccessTokenCookie(session.getAccessToken()).toString())
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateRefreshTokenCookie(session.getRefreshToken()).toString())
+            .body(new SigninResponseMessage(userID, roles));
+    }
+
+    private ResponseEntity<Object> deleteSession(String refreshToken) {
+        sessionService.deleteSession(refreshToken);
+
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
+            .body(new SimpleResponseMessage("Successful logout"));
+    }
+
+    private ResponseEntity<Object> refreshSession(String refreshToken) {
+        Session session = sessionService.refreshSession(refreshToken);
+
+        return ResponseEntity.ok()
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateAccessTokenCookie(session.getAccessToken()).toString())
+            .header(
+                HttpHeaders.SET_COOKIE,
+                generateRefreshTokenCookie(session.getRefreshToken()).toString())
+            .body(new SimpleResponseMessage("successful refresh token pair"));
     }
 
     private ResponseCookie generateCleaningCookie(String name, String path) {
@@ -316,80 +350,5 @@ public class AuthServiceImpl implements AuthService {
             .setNotBefore(new Date(System.currentTimeMillis() + registrationTokenActivationMs))
             .setExpiration(new Date(System.currentTimeMillis() + registrationExpirationMs))
             .compact();
-    }
-
-    private ResponseEntity<Object> createSession(Account account) {
-        String userID = String.valueOf(account.getID());
-        String sessionID = sessionService.createSession(userID);
-        String[] roles = (String[]) account.getRoles().stream().map(Enum::name).toArray();
-        String refreshToken = generateRefreshToken(userID, roles, sessionID);
-
-        refreshTokenRepository.save(sessionID, refreshToken);
-
-        return ResponseEntity.ok()
-            .header(
-                HttpHeaders.SET_COOKIE,
-                generateAccessTokenCookie(generateAccessToken(userID, roles, sessionID)).toString())
-            .header(
-                HttpHeaders.SET_COOKIE,
-                generateRefreshTokenCookie(refreshToken).toString())
-            .body(new SigninResponseMessage(
-                userID,
-                roles));
-    }
-
-    private ResponseEntity<Object> deleteSession(String refreshToken) {
-        try {
-            String sessionID = jwtUtil.getRefreshTokenParser().parseClaimsJws(refreshToken).getBody().getId();
-            sessionService.deleteSession(sessionID);
-
-            return ResponseEntity.ok()
-                .header(
-                    HttpHeaders.SET_COOKIE,
-                    generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath).toString())
-                .header(
-                    HttpHeaders.SET_COOKIE,
-                    generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath).toString())
-                .body(new SimpleResponseMessage("Successful logout"));
-        } catch (
-            SignatureException |
-            MalformedJwtException |
-            ExpiredJwtException |
-            UnsupportedJwtException |
-            IllegalArgumentException e
-        ) {
-            throw new InvalidTokenException(EnumTokenType.REFRESH_TOKEN);
-        }
-    }
-
-    private ResponseEntity<Object> refreshSession(String refreshToken) {
-        try {
-            Claims claims = jwtUtil.getRefreshTokenParser().parseClaimsJws(refreshToken).getBody();
-            String sessionID = claims.getId();
-
-            sessionService.refreshSession(sessionID);
-
-            String newRefreshToken = jwtUtil.generateRefreshTokenBuilder()
-                .setClaims(claims)
-                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
-                .compact();
-
-            return ResponseEntity.ok()
-                .header(
-                    HttpHeaders.SET_COOKIE,
-                    generateAccessTokenCookie(generateAccessToken(claims.getSubject(), (String[]) claims.get("roles"), sessionID)).toString())
-                .header(
-                    HttpHeaders.SET_COOKIE,
-                    generateRefreshTokenCookie(newRefreshToken).toString())
-                .body(new SimpleResponseMessage("successful refresh token pair"));
-        } catch (
-            SignatureException |
-            MalformedJwtException |
-            ExpiredJwtException |
-            UnsupportedJwtException |
-            IllegalArgumentException e
-        ) {
-            throw new InvalidTokenException(EnumTokenType.REFRESH_TOKEN);
-        }
     }
 }

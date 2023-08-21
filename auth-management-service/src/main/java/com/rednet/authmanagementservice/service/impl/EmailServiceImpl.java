@@ -1,12 +1,9 @@
 package com.rednet.authmanagementservice.service.impl;
 
 import com.rednet.authmanagementservice.service.EmailService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,22 +19,16 @@ public class EmailServiceImpl implements EmailService {
         this.sender = sender;
     }
 
-    @Async
     @Override
     public void sendRegistrationActivationMessage(String receiverEmail, String activationCode) {
-        try{
-            MimeMessage mimeMessage = emailSender.createMimeMessage();
-            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage);
+        SimpleMailMessage message = new SimpleMailMessage();
 
-            mimeMessageHelper.setFrom(sender);
-            mimeMessageHelper.setTo(receiverEmail);
-            mimeMessageHelper.setSubject("RedNet registration");
-            mimeMessageHelper.setText(generateText(activationCode));
+        message.setFrom(sender);
+        message.setTo(receiverEmail);
+        message.setSubject("RedNet registration");
+        message.setText(generateText(activationCode));
 
-            emailSender.send(mimeMessage);
-        } catch(MessagingException ex) {
-            throw new IllegalStateException("failed to send message");
-        }
+        emailSender.send(message);
     }
 
     private String generateText(String verificationToken){

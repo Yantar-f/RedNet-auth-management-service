@@ -1,4 +1,12 @@
 package com.rednet.authmanagementservice.payload.request;
 
-public record VerifyEmailRequestMessage(String registrationID, String activationCode) {
+import jakarta.validation.constraints.NotBlank;
+
+public record VerifyEmailRequestMessage(
+    @NotBlank(message = "registration id should be not blank")
+    String registrationID,
+
+    @NotBlank(message = "activation code should be not blank")
+    String activationCode
+) {
 }

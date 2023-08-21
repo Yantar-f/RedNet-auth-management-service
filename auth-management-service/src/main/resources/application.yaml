@@ -6,16 +6,12 @@ server:
 spring:
     data:
         redis:
-            refresh-token-db:
-                port: 6379
-                host: localhost
-            registration-db:
-                port: 6380
-                host: localhost
+            port: 6379
+            host: localhost
     datasource:
-        url: ${AUTH_MANAGEMENT_SERVICE_DATABASE_URL}
-        username: ${AUTH_MANAGEMENT_SERVICE_DATABASE_USERNAME}
-        password: ${AUTH_MANAGEMENT_SERVICE_DATABASE_PASSWORD}
+        url: jdbc:postgresql://localhost:5432/RedNetDB
+        username: ${AMS_ACCOUNTS_DB_USERNAME}
+        password: ${AMS_ACCOUNTS_DB_PASSWORD}
         driver-class-name: org.postgresql.Driver
     jpa:
         database: postgresql
@@ -34,8 +30,8 @@ spring:
     mail:
         host: smtp.yandex.ru
         port: 465
-        username: ${AUTH_MANAGEMENT_SERVICE_MAIL_USERNAME}
-        password: ${AUTH_MANAGEMENT_SERVICE_MAIL_PASSWORD}
+        username: ${AMS_MAIL_USERNAME}
+        password: ${AMS_MAIL_PASSWORD}
         protocol: smtps
         default-encoding: UTF-8
 rednet:
@@ -45,15 +41,18 @@ rednet:
         access-token-expiration-ms: 60000
         access-token-cookie-expiration-s: 60
         access-token-cookie-path: /
-        access-token-secret-key: ${AUTH_ACCESS_SECRET_KEY}
+        access-token-secret-key: ${AMS_ACCESS_SECRET_KEY}
+        api-token-issuer: rednet-agw
         registration-expiration-ms: 300000
         registration-token-activation-ms: 60000
         registration-token-cookie-name: rednet-reg-token
+        registration-token-cookie-path: /resend-email-verification
+        registration-token-expiration-ms: 300000
         registration-token-cookie-expiration-s: 300
-        registration-token-secret-key: ${AUTH_REGISTRATION_SECRET_KEY}
+        registration-token-secret-key: ${AMS_REGISTRATION_SECRET_KEY}
         refresh-token-cookie-name: rednet-refresh-token
         refresh-token-expiration-ms: 172800000
         refresh-token-cookie-expiration-s: 172800
         refresh-token-cookie-path: /refresh-tokens
-        refresh-token-secret-key: ${AUTH_REFRESH_SECRET_KEY}
+        refresh-token-secret-key: ${AMS_REFRESH_SECRET_KEY}
         auth-token-issuer: rednet-auth

@@ -1,5 +1,6 @@
 package com.rednet.authmanagementservice.service.impl;
 
+import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.service.SessionService;
 import org.springframework.stereotype.Service;
 
@@ -8,22 +9,23 @@ import java.util.List;
 @Service
 public class SessionServiceImpl implements SessionService {
     @Override
-    public String createSession(String userID) {
+    public Session createSession(String userID, String[] roles) {
+
         return null;
     }
 
     @Override
-    public List<String> getSessionsByUserID(String userID) {
+    public List<Session> getSessionsByUserID(String userID) {
         return null;
     }
 
     @Override
-    public void refreshSession(String sessionID) {
-
+    public Session refreshSession(String refreshToken) {
+        return null;
     }
 
     @Override
-    public void deleteSession(String sessionID) {
+    public void deleteSession(String refreshToken) {
 
     }
 

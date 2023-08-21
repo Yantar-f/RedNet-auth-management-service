@@ -3,9 +3,11 @@ package com.rednet.authmanagementservice.entity;
 import com.rednet.authmanagementservice.config.EnumRoles;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -13,9 +15,11 @@ import jakarta.persistence.Table;
 
 import java.util.Set;
 
+@Entity
 @Table(name = "accounts")
 public class Account {
 
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long ID;
 
@@ -31,9 +35,6 @@ public class Account {
     @Column(name = "secret_word")
     private String secretWord;
 
-    @Column(name = "is_activated")
-    private boolean isActivated = false;
-
     @ManyToMany(
         fetch = FetchType.EAGER,
         cascade = CascadeType.MERGE)
@@ -41,14 +42,16 @@ public class Account {
         name = "accounts_to_roles",
         joinColumns = @JoinColumn (name = "account_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<EnumRoles> roles;
+    private Set<Role> roles;
 
+    protected Account() {}
     public Account(
         String username,
         String password,
         String email,
         String secretWord,
-        Set<EnumRoles> roles) {
+        Set<Role> roles
+    ) {
         this.username = username;
         this.password = password;
         this.email = email;
@@ -96,19 +99,11 @@ public class Account {
         this.secretWord = secretWord;
     }
 
-    public boolean isActivated() {
-        return isActivated;
-    }
-
-    public void setActivated(boolean activated) {
-        isActivated = activated;
-    }
-
-    public Set<EnumRoles> getRoles() {
+    public Set<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<EnumRoles> roles) {
+    public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
 }

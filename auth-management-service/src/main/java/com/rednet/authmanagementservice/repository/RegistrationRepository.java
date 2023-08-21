@@ -6,31 +6,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class RegistrationRepository {
-    private final RedisTemplate<String, Registration> template;
-    private final long RegistrationExpirationMs;
+public interface RegistrationRepository {
+    void save(String registrationID,  Registration registration);
 
-    public RegistrationRepository(
-        @Qualifier("registrationRedisTemplate") RedisTemplate<String, Registration> template,
-        @Value("${rednet.app.registration-expiration-ms}") long RegistrationExpirationMs
-    ) {
-        this.template = template;
-        this.RegistrationExpirationMs = RegistrationExpirationMs;
-    }
+    Optional<Registration> find(String registrationID);
 
-    public void save(String registrationID,  Registration registration) {
-        template.opsForValue().set(registrationID, registration, RegistrationExpirationMs, TimeUnit.MILLISECONDS);
-    }
+    void delete(String registrationID);
 
-    public Optional<Registration> find(String registrationID) {
-        return Optional.ofNullable(template.opsForValue().get(registrationID));
-    }
-
-    public void delete(String registrationID) {
-        template.opsForValue().getAndDelete(registrationID);
-    }
+    List<Registration> findAll(String key);
 }

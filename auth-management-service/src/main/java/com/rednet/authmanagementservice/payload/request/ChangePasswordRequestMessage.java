@@ -1,4 +1,15 @@
 package com.rednet.authmanagementservice.payload.request;
 
-public record ChangePasswordRequestMessage(String userIdentifier, String oldPassword, String newPassword) {
+import jakarta.validation.constraints.NotBlank;
+
+public record ChangePasswordRequestMessage(
+    @NotBlank(message = "user identifier should be not blank")
+    String userIdentifier,
+
+    @NotBlank(message = "password should be not blank")
+    String oldPassword,
+
+    @NotBlank(message = "password should be not blank")
+    String newPassword
+) {
 }

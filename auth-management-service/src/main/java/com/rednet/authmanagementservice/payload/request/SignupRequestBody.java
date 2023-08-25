@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.Length;
 
-public record SignupRequestMessage(
+public record SignupRequestBody(
     @NotBlank(message = "username should be not blank")
     String username,
 

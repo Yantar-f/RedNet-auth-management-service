@@ -1,24 +1,24 @@
 package com.rednet.authmanagementservice.service;
 
-import com.rednet.authmanagementservice.payload.request.ChangePasswordRequestMessage;
-import com.rednet.authmanagementservice.payload.request.SigninRequestMessage;
-import com.rednet.authmanagementservice.payload.request.SignupRequestMessage;
-import com.rednet.authmanagementservice.payload.request.VerifyEmailRequestMessage;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.ResponseEntity;
+import com.rednet.authmanagementservice.entity.Session;
+import com.rednet.authmanagementservice.model.RegistrationCredentials;
+import com.rednet.authmanagementservice.model.RegistrationVerifications;
+import com.rednet.authmanagementservice.model.ChangePasswordCredentials;
+import com.rednet.authmanagementservice.payload.request.SigninRequestBody;
+import com.rednet.authmanagementservice.payload.request.SignupRequestBody;
 
 public interface AuthService {
-    ResponseEntity<Object> signup(SignupRequestMessage requestMessage);
+    RegistrationCredentials signup(SignupRequestBody requestMessage);
 
-    ResponseEntity<Object> signin(SigninRequestMessage requestMessage);
+    Session signin(SigninRequestBody requestMessage);
 
-    ResponseEntity<Object> signout(HttpServletRequest request);
+    void signout(String refreshToken);
 
-    ResponseEntity<Object> refreshTokens(HttpServletRequest request);
+    Session refreshTokens(String refreshToken);
 
-    ResponseEntity<Object> verifyEmail(VerifyEmailRequestMessage requestMessage);
+    String resendEmailVerification(String registrationToken);
 
-    ResponseEntity<Object> resendEmailVerification(HttpServletRequest token);
+    Session verifyEmail(RegistrationVerifications registrationVerifications);
 
-    ResponseEntity<Object> changePassword(ChangePasswordRequestMessage requestMessage);
+    void changePassword(ChangePasswordCredentials changePasswordCredentials);
 }

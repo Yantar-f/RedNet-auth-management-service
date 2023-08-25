@@ -1,7 +1,7 @@
 package com.rednet.authmanagementservice.exception.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rednet.authmanagementservice.payload.response.ErrorResponseMessage;
+import com.rednet.authmanagementservice.payload.response.ErrorResponseBody;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,7 +37,7 @@ public class AuthenticationExceptionHandler implements AuthenticationEntryPoint 
 
         new ObjectMapper().writeValue(
             response.getOutputStream(),
-            new ErrorResponseMessage(
+            new ErrorResponseBody(
                 status.name(),
                 dateFormat.format(new Date()),
                 request.getServletPath(),

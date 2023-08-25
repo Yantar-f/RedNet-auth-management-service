@@ -1,20 +1,19 @@
 package com.rednet.authmanagementservice.exception.handler;
 
 import com.rednet.authmanagementservice.exception.BadRequestException;
-import com.rednet.authmanagementservice.payload.response.ErrorResponseMessage;
+import com.rednet.authmanagementservice.payload.response.ErrorResponseBody;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -25,15 +24,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponseMessage> handleBadRequest(
+    public ResponseEntity<ErrorResponseBody> handleBadRequest(
         BadRequestException ex,
         HttpServletRequest request
     ) {
         return generateBadRequest(request.getServletPath(), ex.getMessages());
     }
 
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseMessage> handleMethodArgumentNotValid(
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseBody> handleMethodArgumentNotValid(
         MethodArgumentNotValidException ex,
         HttpServletRequest request
     ) {
@@ -43,9 +42,20 @@ public class GlobalExceptionHandler {
         );
     }
 
-    private ResponseEntity<ErrorResponseMessage> generateBadRequest(String path, List<String> errorMessages) {
+    @ExceptionHandler(MissingRequestCookieException.class)
+    public ResponseEntity<ErrorResponseBody> handleMissingRequestCookie(
+        MissingRequestCookieException ex,
+        HttpServletRequest request
+    ) {
+        return generateBadRequest(
+            request.getServletPath(),
+            List.of(ex.getMessage())
+        );
+    }
+
+    private ResponseEntity<ErrorResponseBody> generateBadRequest(String path, List<String> errorMessages) {
         return ResponseEntity.badRequest().body(
-            new ErrorResponseMessage(
+            new ErrorResponseBody(
                 HttpStatus.BAD_REQUEST.name(),
                 dateFormat.format(new Date()),
                 path,

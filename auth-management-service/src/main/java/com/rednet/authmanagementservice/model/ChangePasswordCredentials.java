@@ -1,8 +1,8 @@
-package com.rednet.authmanagementservice.payload.request;
+package com.rednet.authmanagementservice.model;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record ChangePasswordRequestMessage(
+public record ChangePasswordCredentials(
     @NotBlank(message = "user identifier should be not blank")
     String userIdentifier,
 

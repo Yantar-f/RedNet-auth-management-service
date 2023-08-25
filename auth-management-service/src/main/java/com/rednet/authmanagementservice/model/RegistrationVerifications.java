@@ -1,8 +1,8 @@
-package com.rednet.authmanagementservice.payload.request;
+package com.rednet.authmanagementservice.model;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record VerifyEmailRequestMessage(
+public record RegistrationVerifications(
     @NotBlank(message = "registration id should be not blank")
     String registrationID,
 

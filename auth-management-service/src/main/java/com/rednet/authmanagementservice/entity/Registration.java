@@ -5,6 +5,7 @@ import java.io.Serializable;
 
 public class Registration implements Serializable {
     private String activationCode;
+    private String tokenID;
     private String username;
     private String password;
     private String email;
@@ -13,12 +14,13 @@ public class Registration implements Serializable {
     public Registration() {}
     public Registration(
         String activationCode,
-        String username,
+        String tokenID, String username,
         String password,
         String email,
         String secretWord
     ) {
         this.activationCode = activationCode;
+        this.tokenID = tokenID;
         this.username = username;
         this.password = password;
         this.email = email;
@@ -31,6 +33,14 @@ public class Registration implements Serializable {
 
     public void setActivationCode(String activationCode) {
         this.activationCode = activationCode;
+    }
+
+    public String getTokenID() {
+        return tokenID;
+    }
+
+    public void setTokenID(String tokenID) {
+        this.tokenID = tokenID;
     }
 
     public String getUsername() {

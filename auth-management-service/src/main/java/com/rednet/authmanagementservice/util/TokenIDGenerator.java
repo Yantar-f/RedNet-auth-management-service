@@ -1,5 +1,5 @@
 package com.rednet.authmanagementservice.util;
 
-public interface ActivationCodeGenerator {
+public interface TokenIDGenerator {
     String generate();
 }

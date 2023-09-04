@@ -1,6 +1,6 @@
 package com.rednet.authmanagementservice.controller;
 
-import com.rednet.authmanagementservice.entity.Session;
+import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.exception.impl.MissingTokenException;
 import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationVerifications;
@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 @RestController
-@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(produces = APPLICATION_JSON_VALUE)
 public class AuthController {
     private final AuthService authService;
     private final String accessTokenCookieName;
@@ -68,7 +70,7 @@ public class AuthController {
 
     @PostMapping(
         path = "/signup",
-        consumes = MediaType.APPLICATION_JSON_VALUE)
+        consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> signup(@RequestBody @Valid SignupRequestBody requestBody) {
         RegistrationCredentials reg = authService.signup(requestBody);
         return ResponseEntity.ok()
@@ -80,9 +82,9 @@ public class AuthController {
 
     @PostMapping(
         path = "/signin",
-        consumes = MediaType.APPLICATION_JSON_VALUE)
+        consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> signin(@RequestBody @Valid SigninRequestBody requestBody) {
-        Session session = authService.signin(requestBody);
+        SessionDTO session = authService.signin(requestBody);
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.SET_COOKIE,
@@ -127,7 +129,7 @@ public class AuthController {
             .findFirst()
             .orElseThrow(() -> new MissingTokenException("Missing refresh token"));
 
-        Session session = authService.refreshTokens(refreshTokenCookie.getValue());
+        SessionDTO session = authService.refreshTokens(refreshTokenCookie.getValue());
 
         return ResponseEntity.ok()
             .header(
@@ -141,9 +143,9 @@ public class AuthController {
 
     @PostMapping(
         path = "/verify-email",
-        consumes = MediaType.APPLICATION_JSON_VALUE)
+        consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> verifyEmail(@RequestBody @Valid RegistrationVerifications requestBody) {
-        Session session = authService.verifyEmail(requestBody);
+        SessionDTO session = authService.verifyEmail(requestBody);
         return ResponseEntity.ok()
             .header(
                 HttpHeaders.SET_COOKIE,
@@ -176,7 +178,7 @@ public class AuthController {
 
     @PostMapping(
         path = "/change-password",
-        consumes = MediaType.APPLICATION_JSON_VALUE)
+        consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> changePassword(@RequestBody @Valid ChangePasswordCredentials requestBody) {
         authService.changePassword(requestBody);
         return ResponseEntity.ok().body(new SimpleResponseBody("password updated"));

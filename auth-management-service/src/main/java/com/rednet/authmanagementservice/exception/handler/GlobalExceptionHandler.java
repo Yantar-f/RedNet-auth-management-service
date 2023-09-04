@@ -1,7 +1,9 @@
 package com.rednet.authmanagementservice.exception.handler;
 
 import com.rednet.authmanagementservice.exception.BadRequestException;
+import com.rednet.authmanagementservice.exception.impl.ServerErrorException;
 import com.rednet.authmanagementservice.payload.response.ErrorResponseBody;
+import feign.FeignException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,14 @@ public class GlobalExceptionHandler {
         return generateBadRequest(request.getServletPath(), ex.getMessages());
     }
 
+    @ExceptionHandler(ServerErrorException.class)
+    public ResponseEntity<ErrorResponseBody> handleBadRequest(
+        ServerErrorException ex,
+        HttpServletRequest request
+    ) {
+        return generateServerError(request.getServletPath(), ex.getMessages());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseBody> handleMethodArgumentNotValid(
         MethodArgumentNotValidException ex,
@@ -47,9 +57,17 @@ public class GlobalExceptionHandler {
         MissingRequestCookieException ex,
         HttpServletRequest request
     ) {
-        return generateBadRequest(
-            request.getServletPath(),
-            List.of(ex.getMessage())
+        return generateBadRequest(request.getServletPath(), List.of(ex.getMessage()));
+    }
+
+    private ResponseEntity<ErrorResponseBody> generateServerError(String path, List<String> messages) {
+        return ResponseEntity.internalServerError().body(
+            new ErrorResponseBody(
+                HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                dateFormat.format(new Date()),
+                path,
+                messages
+            )
         );
     }
 

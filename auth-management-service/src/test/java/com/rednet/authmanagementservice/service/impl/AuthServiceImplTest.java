@@ -3,6 +3,7 @@ package com.rednet.authmanagementservice.service.impl;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
 import com.rednet.authmanagementservice.entity.Role;
+import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
 import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationActivationCodeException;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
 
@@ -90,6 +92,7 @@ class AuthServiceImplTest {
     JwtParser regTokenParser = Jwts.parserBuilder()
         .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(regTokenSecretKey)))
         .build();
+    Date expectedCreatedAt = new Date();
 
     @Test
     void signup() {
@@ -182,8 +185,10 @@ class AuthServiceImplTest {
         Session expectedSession = new Session(
             expectedUserID,
             expectedRoles,
+            expectedCreatedAt,
             expectedAccessToken,
-            expectedRefreshToken
+            expectedRefreshToken,
+            expectedTokenID
         );
 
         SigninRequestBody body = new SigninRequestBody(expectedUsername, expectedPassword);
@@ -193,13 +198,12 @@ class AuthServiceImplTest {
         when(sessionService.createSession(any(), any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            Session session = authService.signin(body);
+            SessionDTO sessionDTO = authService.signin(body);
 
-            assertEquals(expectedUserID, session.getUserID());
-            assertEquals(expectedAccessToken, session.getAccessToken());
-            assertEquals(expectedRefreshToken, session.getRefreshToken());
-
-            assertTrue(compareStringArraysContent(expectedRoles, session.getRoles()));
+            assertEquals(expectedUserID, sessionDTO.getUserID());
+            assertEquals(expectedAccessToken, sessionDTO.getAccessToken());
+            assertEquals(expectedRefreshToken, sessionDTO.getRefreshToken());
+            assertTrue(compareStringArraysContent(expectedRoles, sessionDTO.getRoles()));
         });
 
         verify(accountRepository).findEagerByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
@@ -260,21 +264,22 @@ class AuthServiceImplTest {
         Session expectedSession = new Session(
             expectedUserID,
             expectedRoles,
+            expectedCreatedAt,
             expectedAccessToken,
-            expectedRefreshToken
+            expectedRefreshToken,
+            expectedTokenID
         );
 
         when(sessionService.refreshSession(any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            Session session = authService.refreshTokens("old-token");
+            SessionDTO sessionDTO = authService.refreshTokens("old-token");
 
-            assertEquals(expectedUserID, session.getUserID());
-            assertEquals(expectedAccessToken, session.getAccessToken());
-            assertEquals(expectedRefreshToken, session.getRefreshToken());
-            assertEquals(expectedRoles.length, session.getRoles().length);
-
-            assertTrue(compareStringArraysContent(expectedRoles,session.getRoles()));
+            assertEquals(expectedUserID, sessionDTO.getUserID());
+            assertEquals(expectedAccessToken, sessionDTO.getAccessToken());
+            assertEquals(expectedRefreshToken, sessionDTO.getRefreshToken());
+            assertEquals(expectedRoles.length, sessionDTO.getRoles().length);
+            assertTrue(compareStringArraysContent(expectedRoles, sessionDTO.getRoles()));
         });
 
         verify(sessionService).refreshSession(eq("old-token"));
@@ -306,8 +311,10 @@ class AuthServiceImplTest {
         Session expectedSession = new Session(
             expectedUserID,
             expectedRoles,
+            expectedCreatedAt,
             expectedAccessToken,
-            expectedRefreshToken
+            expectedRefreshToken,
+            expectedTokenID
         );
 
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
@@ -316,12 +323,12 @@ class AuthServiceImplTest {
         when(sessionService.createSession(any(), any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            Session actualSession = authService.verifyEmail(expectedBody);
+            SessionDTO actualSessionDTO = authService.verifyEmail(expectedBody);
 
-            assertEquals(expectedUserID, actualSession.getUserID());
-            assertEquals(expectedAccessToken, actualSession.getAccessToken());
-            assertEquals(expectedRefreshToken, actualSession.getRefreshToken());
-            assertTrue(compareStringArraysContent(expectedRoles, actualSession.getRoles()));
+            assertEquals(expectedUserID, actualSessionDTO.getUserID());
+            assertEquals(expectedAccessToken, actualSessionDTO.getAccessToken());
+            assertEquals(expectedRefreshToken, actualSessionDTO.getRefreshToken());
+            assertTrue(compareStringArraysContent(expectedRoles, actualSessionDTO.getRoles()));
         });
 
         verify(registrationRepository).find(eq(expectedRegistrationID));

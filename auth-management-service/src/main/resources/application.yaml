@@ -1,17 +1,19 @@
 server:
-    port: 8001
+    port: 8081
     error:
         include-message: always
         include-binding-errors: always
 spring:
+    application:
+        name: AUTH-MANAGEMENT_SERVICE
     data:
         redis:
             port: 6379
             host: localhost
     datasource:
         url: jdbc:postgresql://localhost:5432/RedNetDB
-        username: ${AMS_ACCOUNTS_DB_USERNAME}
-        password: ${AMS_ACCOUNTS_DB_PASSWORD}
+        username: postgres
+        password: 123
         driver-class-name: org.postgresql.Driver
     jpa:
         database: postgresql
@@ -30,18 +32,18 @@ spring:
     mail:
         host: smtp.yandex.ru
         port: 465
-        username: ${AMS_MAIL_USERNAME}
-        password: ${AMS_MAIL_PASSWORD}
+        username: shevchenkomo@stud.omsu.ru
+        password: qewubjnwhqzyldeh
         protocol: smtps
         default-encoding: UTF-8
 rednet:
     app:
         password-encoder-strength: 10
         access-token-cookie-name: rednet-access-token
-        access-token-expiration-ms: 60000
         access-token-cookie-expiration-s: 60
         access-token-cookie-path: /
-        access-token-secret-key: ${AMS_ACCESS_SECRET_KEY}
+        api-token-cookie-name: rednet-api-token
+        api-token-secret-key: 301RJdFDpzEchd3y+4O7GUl3Ade2PNyyDtUx76AdPWpe0uYUW47MON9jtEUOmod9
         api-token-issuer: rednet-agw
         registration-expiration-ms: 300000
         registration-token-activation-ms: 60000
@@ -49,10 +51,12 @@ rednet:
         registration-token-cookie-path: /resend-email-verification
         registration-token-expiration-ms: 300000
         registration-token-cookie-expiration-s: 300
-        registration-token-secret-key: ${AMS_REGISTRATION_SECRET_KEY}
+        registration-token-secret-key: g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h
         refresh-token-cookie-name: rednet-refresh-token
-        refresh-token-expiration-ms: 172800000
         refresh-token-cookie-expiration-s: 172800
         refresh-token-cookie-path: /refresh-tokens
-        refresh-token-secret-key: ${AMS_REFRESH_SECRET_KEY}
         auth-token-issuer: rednet-auth
+eureka:
+    client:
+        service-url:
+            defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}

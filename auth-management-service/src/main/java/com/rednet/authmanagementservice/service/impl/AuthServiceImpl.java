@@ -4,7 +4,7 @@ import com.rednet.authmanagementservice.config.EnumRoles;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
 import com.rednet.authmanagementservice.entity.Role;
-import com.rednet.authmanagementservice.entity.Session;
+import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationActivationCodeException;
 import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
 import com.rednet.authmanagementservice.exception.impl.OccupiedValuesException;
@@ -99,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Session signin(SigninRequestBody requestMessage) {
+    public SessionDTO signin(SigninRequestBody requestMessage) {
         Account account = accountRepository
             .findEagerByUsernameOrEmail(requestMessage.userIdentifier(), requestMessage.userIdentifier())
             .orElseThrow(InvalidAccountDataException::new);
@@ -117,12 +117,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Session refreshTokens(String refreshToken) {
-        return sessionService.refreshSession(refreshToken);
+    public SessionDTO refreshTokens(String refreshToken) {
+        return new SessionDTO(sessionService.refreshSession(refreshToken));
     }
 
     @Override
-    public Session verifyEmail(RegistrationVerifications registrationVerifications) {
+    public SessionDTO verifyEmail(RegistrationVerifications registrationVerifications) {
         Registration registration = registrationRepository
             .find(registrationVerifications.registrationID())
             .orElseThrow(() -> new RegistrationNotFoundException(registrationVerifications.registrationID()));
@@ -199,10 +199,11 @@ public class AuthServiceImpl implements AuthService {
         accountRepository.save(account);
     }
 
-    private Session createSession(Account account) {
-        return sessionService.createSession(
+    private SessionDTO createSession(Account account) {
+        return new SessionDTO(sessionService.createSession(
             String.valueOf(account.getID()),
-            account.getRoles().stream().map(Role::getDesignation).toArray(String[]::new));
+            account.getRoles().stream().map(Role::getDesignation).toArray(String[]::new)
+        ));
     }
 
     private String generateRegistrationToken(String registrationID, String tokenID) {

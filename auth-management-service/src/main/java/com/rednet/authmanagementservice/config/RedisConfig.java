@@ -16,8 +16,8 @@ public class RedisConfig {
     private final int registrationRedisPort;
 
     public RedisConfig(
-        @Value("${spring.data.redis.registration-db.host}") String registrationRedisHost,
-        @Value("${spring.data.redis.registration-db.port}") int registrationRedisPort
+        @Value("${spring.data.redis.host}") String registrationRedisHost,
+        @Value("${spring.data.redis.port}") int registrationRedisPort
     ) {
         this.registrationRedisHost = registrationRedisHost;
         this.registrationRedisPort = registrationRedisPort;

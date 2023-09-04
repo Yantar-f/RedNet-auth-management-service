@@ -15,8 +15,6 @@ import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 
 @Component
 public class JwtUtilImpl implements JwtUtil {
-    private final String apiTokenSecretKey;
-    private final String refreshTokenSecretKey;
     private final String registrationTokenSecretKey;
     private final String authTokenIssuer;
     private final JwtParser apiTokenParser;
@@ -26,15 +24,12 @@ public class JwtUtilImpl implements JwtUtil {
 
     public JwtUtilImpl(
         @Value("${rednet.app.api-token-secret-key}") String apiTokenSecretKey,
-        @Value("${rednet.app.refresh-token-secret-key}") String refreshTokenSecretKey,
         @Value("${rednet.app.registration-token-secret-key}") String registrationTokenSecretKey,
         @Value("${rednet.app.auth-token-issuer}") String authTokenIssuer,
         @Value("${rednet.app.api-token-issuer}") String apiTokenIssuer,
         @Value("${rednet.app.registration-token-activation-ms}") long registrationTokenActivationMs,
         @Value("${rednet.app.registration-token-expiration-ms}") long registrationExpirationMs
     ) {
-        this.apiTokenSecretKey = apiTokenSecretKey;
-        this.refreshTokenSecretKey = refreshTokenSecretKey;
         this.registrationTokenSecretKey = registrationTokenSecretKey;
         this.authTokenIssuer = authTokenIssuer;
         this.registrationTokenActivationMs = registrationTokenActivationMs;
@@ -49,20 +44,6 @@ public class JwtUtilImpl implements JwtUtil {
             .requireIssuer(authTokenIssuer)
             .setAllowedClockSkewSeconds(5)
             .build();
-    }
-
-    @Override
-    public JwtBuilder generateAccessTokenBuilder() {
-        return Jwts.builder()
-            .setIssuer(authTokenIssuer)
-            .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(apiTokenSecretKey)), HS256);
-    }
-
-    @Override
-    public JwtBuilder generateRefreshTokenBuilder() {
-        return Jwts.builder()
-            .setIssuer(authTokenIssuer)
-            .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshTokenSecretKey)), HS256);
     }
 
     @Override

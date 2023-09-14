@@ -34,6 +34,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.time.Instant;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
@@ -166,7 +167,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(OccupiedValueException.class)
     public ResponseEntity<Object> handleOccupiedValueException(WebRequest request, OccupiedValueException ex){
-        return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
+        return generateErrorResponse(CONFLICT, extractPath(request), ex.getMessage());
     }
 
     @ExceptionHandler(InvalidAccountDataException.class)

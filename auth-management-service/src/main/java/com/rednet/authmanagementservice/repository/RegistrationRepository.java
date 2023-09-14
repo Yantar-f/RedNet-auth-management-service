@@ -13,6 +13,4 @@ public interface RegistrationRepository {
     Optional<Registration> find(String registrationID);
 
     void delete(String registrationID);
-
-    List<Registration> findAll(String key);
 }

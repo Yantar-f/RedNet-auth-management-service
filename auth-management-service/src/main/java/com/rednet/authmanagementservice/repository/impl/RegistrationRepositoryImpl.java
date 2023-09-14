@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -34,9 +33,5 @@ public class RegistrationRepositoryImpl implements RegistrationRepository {
 
     public void delete(String registrationID) {
         template.opsForValue().getAndDelete(registrationID);
-    }
-
-    public List<Registration> findAll(String key) {
-        return template.opsForList().range(key, 0, -1);
     }
 }

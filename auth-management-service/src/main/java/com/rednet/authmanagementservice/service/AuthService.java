@@ -3,7 +3,6 @@ package com.rednet.authmanagementservice.service;
 import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationVerifications;
-import com.rednet.authmanagementservice.model.ChangePasswordCredentials;
 import com.rednet.authmanagementservice.payload.request.SigninRequestBody;
 import com.rednet.authmanagementservice.payload.request.SignupRequestBody;
 
@@ -19,6 +18,4 @@ public interface AuthService {
     String resendEmailVerification(String registrationToken);
 
     SessionDTO verifyEmail(RegistrationVerifications registrationVerifications);
-
-    void changePassword(ChangePasswordCredentials changePasswordCredentials);
 }

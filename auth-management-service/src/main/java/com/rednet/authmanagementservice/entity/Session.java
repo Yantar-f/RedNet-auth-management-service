@@ -1,11 +1,11 @@
 package com.rednet.authmanagementservice.entity;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class Session {
     private String userID;
     private String[] roles;
-    private Date createdAt;
+    private Instant createdAt;
     private String accessToken;
     private String refreshToken;
     private String tokenID;
@@ -13,7 +13,7 @@ public class Session {
     public Session(
         String userID,
         String[] roles,
-        Date createdAt,
+        Instant createdAt,
         String accessToken,
         String refreshToken,
         String tokenID
@@ -42,11 +42,11 @@ public class Session {
         this.roles = roles;
     }
 
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

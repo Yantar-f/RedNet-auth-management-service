@@ -5,7 +5,14 @@ server:
         include-binding-errors: always
 spring:
     application:
-        name: AUTH-MANAGEMENT_SERVICE
+        name: AUTH-MANAGEMENT-SERVICE
+    cloud:
+        config:
+            fail-fast: true
+            name: discovery-client-config,api-token-config,access-token-config,refresh-token-config,smtp-config
+            uri: http://localhost:8888
+    config:
+        import: 'configserver:'
     data:
         redis:
             port: 6379
@@ -30,33 +37,22 @@ spring:
                     sharedCache:
                         mode: ENABLE_SELECTIVE
     mail:
-        host: smtp.yandex.ru
-        port: 465
-        username: shevchenkomo@stud.omsu.ru
-        password: qewubjnwhqzyldeh
-        protocol: smtps
+        host: ${rednet.app.smtp.host}
+        port: ${rednet.app.smtp.port}
+        username: ${rednet.app.smtp.username}
+        password: ${rednet.app.smtp.password}
+        protocol: ${rednet.app.smtp.protocol}
         default-encoding: UTF-8
 rednet:
     app:
         password-encoder-strength: 10
-        access-token-cookie-name: rednet-access-token
-        access-token-cookie-expiration-s: 60
-        access-token-cookie-path: /
-        api-token-cookie-name: rednet-api-token
-        api-token-secret-key: 301RJdFDpzEchd3y+4O7GUl3Ade2PNyyDtUx76AdPWpe0uYUW47MON9jtEUOmod9
-        api-token-issuer: rednet-agw
         registration-expiration-ms: 300000
-        registration-token-activation-ms: 60000
-        registration-token-cookie-name: rednet-reg-token
-        registration-token-cookie-path: /resend-email-verification
-        registration-token-expiration-ms: 300000
-        registration-token-cookie-expiration-s: 300
-        registration-token-secret-key: g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h
-        refresh-token-cookie-name: rednet-refresh-token
-        refresh-token-cookie-expiration-s: 172800
-        refresh-token-cookie-path: /refresh-tokens
-        auth-token-issuer: rednet-auth
-eureka:
-    client:
-        service-url:
-            defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+        registration-token:
+            activation-ms: 60000
+            expiration-ms: 300000
+            allowed-clock-skew-s: 5
+            cookie-name: rednet-reg-token
+            cookie-path: /resend-email-verification
+            cookie-expiration-s: 300
+            secret-key: g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h
+            issuer: rednet-auth

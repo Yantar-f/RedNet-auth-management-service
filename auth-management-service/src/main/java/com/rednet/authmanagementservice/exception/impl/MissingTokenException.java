@@ -1,11 +1,9 @@
 package com.rednet.authmanagementservice.exception.impl;
 
-import com.rednet.authmanagementservice.exception.BadRequestException;
+import com.rednet.authmanagementservice.config.EnumTokenType;
 
-import java.util.List;
-
-public class MissingTokenException extends BadRequestException {
-    public MissingTokenException(String message) {
-        super(List.of(message));
+public class MissingTokenException extends RuntimeException {
+    public MissingTokenException(EnumTokenType tokenType) {
+        super("Missing " + tokenType.getName());
     }
 }

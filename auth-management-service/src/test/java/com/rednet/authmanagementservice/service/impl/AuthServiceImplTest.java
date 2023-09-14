@@ -6,10 +6,9 @@ import com.rednet.authmanagementservice.entity.Role;
 import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
-import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationActivationCodeException;
+import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationDataException;
 import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
-import com.rednet.authmanagementservice.exception.impl.OccupiedValuesException;
-import com.rednet.authmanagementservice.model.ChangePasswordCredentials;
+import com.rednet.authmanagementservice.exception.impl.OccupiedValueException;
 import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationVerifications;
 import com.rednet.authmanagementservice.payload.request.SigninRequestBody;
@@ -31,8 +30,8 @@ import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -92,7 +90,7 @@ class AuthServiceImplTest {
     JwtParser regTokenParser = Jwts.parserBuilder()
         .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(regTokenSecretKey)))
         .build();
-    Date expectedCreatedAt = new Date();
+    Instant expectedCreatedAt = Instant.now();
 
     @Test
     void signup() {
@@ -160,7 +158,7 @@ class AuthServiceImplTest {
 
         when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
 
-        assertThrows(OccupiedValuesException.class, () -> authService.signup(expectedBody));
+        assertThrows(OccupiedValueException.class, () -> authService.signup(expectedBody));
 
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
         verify(passwordEncoder, never()).encode(any());
@@ -365,7 +363,7 @@ class AuthServiceImplTest {
 
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
 
-        assertThrows(InvalidRegistrationActivationCodeException.class, () -> authService.verifyEmail(expectedBody));
+        assertThrows(InvalidRegistrationDataException.class, () -> authService.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
         verify(accountRepository, never()).save(any());
@@ -397,7 +395,7 @@ class AuthServiceImplTest {
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
         when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
 
-        assertThrows(OccupiedValuesException.class, () -> authService.verifyEmail(expectedBody));
+        assertThrows(OccupiedValueException.class, () -> authService.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
@@ -484,78 +482,6 @@ class AuthServiceImplTest {
         verify(tokenIDGenerator, never()).generate();
         verify(jwtUtil, never()).generateRegistrationTokenBuilder();
         verify(emailService, never()).sendRegistrationActivationMessage(any(), any());
-    }
-
-    @Test
-    void changePassword() {
-        String expectedNewPassword = "new-pass";
-        String expectedNewEncodedPassword = "new-encode";
-
-        ChangePasswordCredentials expectedBody = new ChangePasswordCredentials(
-            expectedUsername,
-            expectedPassword,
-            expectedNewPassword
-        );
-
-        Account expectedAccount = new Account(
-            expectedUsername,
-            expectedEncodedPassword,
-            expectedEmail,
-            expectedSecretWord,
-            Set.of(new Role(ROLE_USER))
-        );
-
-        when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
-        when(accountRepository.save(any(Account.class))).then(returnsFirstArg());
-        when(passwordEncoder.matches(any(), any())).thenReturn(true);
-        when(passwordEncoder.encode(any())).thenReturn(expectedNewEncodedPassword);
-
-        assertDoesNotThrow(() -> authService.changePassword(expectedBody));
-
-        verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
-        verify(passwordEncoder).matches(eq(expectedPassword), eq(expectedEncodedPassword));
-        verify(passwordEncoder).encode(eq(expectedNewPassword));
-
-        verify(accountRepository).save(argThat(account ->
-            account.getPassword().equals(expectedNewEncodedPassword) &&
-            account.getUsername().equals(expectedUsername) &&
-            account.getEmail().equals(expectedEmail) &&
-            account.getSecretWord().equals(expectedSecretWord) &&
-            compareStringArraysContent(
-                expectedRoles,
-                account.getRoles().stream().map(Role::getDesignation).toArray(String[]::new)
-            )
-        ));
-    }
-
-    @Test
-    void changePassword_InvalidAccountData() {
-        String expectedNewPassword = "new-pass";
-        String expectedInvalidPassword = "invalid";
-
-        ChangePasswordCredentials expectedBody = new ChangePasswordCredentials(
-            expectedUsername,
-            expectedInvalidPassword,
-            expectedNewPassword
-        );
-
-        Account expectedAccount = new Account(
-            expectedUsername,
-            expectedEncodedPassword,
-            expectedEmail,
-            expectedSecretWord,
-            Set.of(new Role(ROLE_USER))
-        );
-
-        when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
-        when(passwordEncoder.matches(any(), any())).thenReturn(false);
-
-        assertThrows(InvalidAccountDataException.class, () -> authService.changePassword(expectedBody));
-
-        verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
-        verify(passwordEncoder).matches(eq(expectedInvalidPassword), eq(expectedEncodedPassword));
-        verify(passwordEncoder, never()).encode(any());
-        verify(accountRepository, never()).save(any());
     }
 
     private boolean compareStringArraysContent(String[] expectedRoles, String[] roles) {

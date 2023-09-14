@@ -13,7 +13,7 @@ import static org.springframework.http.HttpHeaders.COOKIE;
 public class SecurityRequestInterceptor implements RequestInterceptor {
     private final String apiTokenCookieName;
 
-    public SecurityRequestInterceptor(@Value("${rednet.app.api-token-cookie-name}") String apiTokenCookieName) {
+    public SecurityRequestInterceptor(@Value("${rednet.app.security.api-token.cookie-name}") String apiTokenCookieName) {
         this.apiTokenCookieName = apiTokenCookieName;
     }
 

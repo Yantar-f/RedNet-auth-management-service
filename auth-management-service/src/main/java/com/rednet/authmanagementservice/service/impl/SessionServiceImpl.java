@@ -23,11 +23,6 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public List<Session> getSessionsByUserID(String userID) {
-        return serviceClient.getSessionsByUserID(userID).getBody();
-    }
-
-    @Override
     public Session refreshSession(String refreshToken) {
         return serviceClient.refreshSession(new RefreshSessionRequestBody(refreshToken)).getBody();
     }
@@ -35,10 +30,5 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public void deleteSession(String refreshToken) {
         serviceClient.deleteSession(new RefreshSessionRequestBody(refreshToken));
-    }
-
-    @Override
-    public void deleteSessionsByUserID(String userID) {
-        serviceClient.deleteSession(new RefreshSessionRequestBody(userID));
     }
 }

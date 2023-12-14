@@ -8,9 +8,9 @@ import java.util.Optional;
 
 @Component
 public interface RegistrationRepository {
-    void save(String registrationID,  Registration registration);
+    void                    save    (String registrationID,  Registration registration);
 
-    Optional<Registration> find(String registrationID);
+    Optional<Registration>  find    (String registrationID);
 
-    void delete(String registrationID);
+    void                    delete  (String registrationID);
 }

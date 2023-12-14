@@ -15,11 +15,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @FeignClient(name = "SESSION-SERVICE", path = "/sessions", fallbackFactory = SessionServiceClientFallbackFactory.class)
 public interface SessionServiceClient {
     @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Session> createSession(@RequestBody CreateSessionRequestBody requestBody);
+    ResponseEntity<Session> createSession   (@RequestBody CreateSessionRequestBody requestBody);
 
     @PutMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Session> refreshSession(@RequestBody RefreshSessionRequestBody requestBody);
+    ResponseEntity<Session> refreshSession  (@RequestBody RefreshSessionRequestBody requestBody);
 
     @PostMapping(path = "/session-removing-process", consumes = APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> deleteSession(@RequestBody RefreshSessionRequestBody requestBody);
+    ResponseEntity<Void>    deleteSession   (@RequestBody RefreshSessionRequestBody requestBody);
 }

@@ -1,0 +1,58 @@
+server:
+    port: 8081
+    error:
+        include-message: always
+        include-binding-errors: always
+spring:
+    application:
+        name: AUTH-MANAGEMENT-SERVICE
+    cloud:
+        config:
+            fail-fast: true
+            name: discovery-client-config,api-token-config,access-token-config,refresh-token-config,smtp-config
+            uri: http://localhost:8888
+    config:
+        import: 'configserver:'
+    data:
+        redis:
+            port: 6379
+            host: localhost
+    datasource:
+        url: jdbc:postgresql://localhost:5432/RedNetDB
+        username: postgres
+        password: 123
+        driver-class-name: org.postgresql.Driver
+    jpa:
+        database: postgresql
+        open-in-view: false
+        show-sql: true
+        hibernate:
+            ddl-auto: create-drop
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+                format_sql: true
+            jakarta:
+                persistence:
+                    sharedCache:
+                        mode: ENABLE_SELECTIVE
+    mail:
+        host: ${rednet.app.smtp.host}
+        port: ${rednet.app.smtp.port}
+        username: ${rednet.app.smtp.username}
+        password: ${rednet.app.smtp.password}
+        protocol: ${rednet.app.smtp.protocol}
+        default-encoding: UTF-8
+rednet:
+    app:
+        password-encoder-strength: 10
+        registration-expiration-ms: 300000
+        registration-token:
+            activation-ms: 60000
+            expiration-ms: 300000
+            allowed-clock-skew-s: 5
+            cookie-name: rednet-reg-token
+            cookie-path: /resend-email-verification
+            cookie-expiration-s: 300
+            secret-key: g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h
+            issuer: rednet-auth

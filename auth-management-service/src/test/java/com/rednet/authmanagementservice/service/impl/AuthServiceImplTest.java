@@ -51,15 +51,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceImplTest {
-    AccountRepository accountRepository = mock(AccountRepository.class);
-    RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
+    AccountRepository       accountRepository= mock(AccountRepository.class);
+    RegistrationRepository  registrationRepository = mock(RegistrationRepository.class);
     ActivationCodeGenerator activationCodeGenerator = mock(ActivationCodeGenerator.class);
-    TokenIDGenerator tokenIDGenerator = mock(TokenIDGenerator.class);
-    PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-    SessionService sessionService = mock(SessionService.class);
-    EmailService emailService = mock(EmailService.class);
-    JwtUtil jwtUtil = mock(JwtUtil.class);
-    String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
+    TokenIDGenerator        tokenIDGenerator = mock(TokenIDGenerator.class);
+    PasswordEncoder         passwordEncoder = mock(PasswordEncoder.class);
+    SessionService          sessionService = mock(SessionService.class);
+    EmailService            emailService = mock(EmailService.class);
+    JwtUtil                 jwtUtil = mock(JwtUtil.class);
 
     AuthService authService = new AuthServiceImpl(
         accountRepository,
@@ -72,18 +71,18 @@ class AuthServiceImplTest {
         jwtUtil
     );
 
-    String
-        expectedUserID = "123456",
-        expectedUsername = "username",
-        expectedPassword = "password",
-        expectedEncodedPassword = "encodedPassword",
-        expectedEmail = "email",
-        expectedSecretWord = "secret",
-        expectedActivationCode = "activation",
-        expectedTokenID = "reg-token-id",
-        expectedAccessToken = "a-token",
-        expectedRefreshToken = "r-token",
-        expectedRegistrationID = "reg-id";
+    String expectedUserID = "123456";
+    String expectedUsername = "username";
+    String expectedPassword = "password";
+    String expectedEncodedPassword = "encodedPassword";
+    String expectedEmail = "email";
+    String expectedSecretWord = "secret";
+    String expectedActivationCode = "activation";
+    String expectedTokenID = "reg-token-id";
+    String expectedAccessToken = "a-token";
+    String expectedRefreshToken = "r-token";
+    String expectedRegistrationID = "reg-id";
+    String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
 
     String[] expectedRoles = new String[]{ROLE_USER.name()};
 

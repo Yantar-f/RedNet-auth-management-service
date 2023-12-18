@@ -51,16 +51,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceImplTest {
-    AccountRepository       accountRepository= mock(AccountRepository.class);
-    RegistrationRepository  registrationRepository = mock(RegistrationRepository.class);
-    ActivationCodeGenerator activationCodeGenerator = mock(ActivationCodeGenerator.class);
-    TokenIDGenerator        tokenIDGenerator = mock(TokenIDGenerator.class);
-    PasswordEncoder         passwordEncoder = mock(PasswordEncoder.class);
-    SessionService          sessionService = mock(SessionService.class);
-    EmailService            emailService = mock(EmailService.class);
-    JwtUtil                 jwtUtil = mock(JwtUtil.class);
+    private final AccountRepository       accountRepository= mock(AccountRepository.class);
+    private final RegistrationRepository  registrationRepository = mock(RegistrationRepository.class);
+    private final ActivationCodeGenerator activationCodeGenerator = mock(ActivationCodeGenerator.class);
+    private final TokenIDGenerator        tokenIDGenerator = mock(TokenIDGenerator.class);
+    private final PasswordEncoder         passwordEncoder = mock(PasswordEncoder.class);
+    private final SessionService          sessionService = mock(SessionService.class);
+    private final EmailService            emailService = mock(EmailService.class);
+    private final JwtUtil                 jwtUtil = mock(JwtUtil.class);
 
-    AuthService authService = new AuthServiceImpl(
+    private final AuthService authService = new AuthServiceImpl(
         accountRepository,
         registrationRepository,
         activationCodeGenerator,
@@ -71,25 +71,25 @@ class AuthServiceImplTest {
         jwtUtil
     );
 
-    String expectedUserID = "123456";
-    String expectedUsername = "username";
-    String expectedPassword = "password";
-    String expectedEncodedPassword = "encodedPassword";
-    String expectedEmail = "email";
-    String expectedSecretWord = "secret";
-    String expectedActivationCode = "activation";
-    String expectedTokenID = "reg-token-id";
-    String expectedAccessToken = "a-token";
-    String expectedRefreshToken = "r-token";
-    String expectedRegistrationID = "reg-id";
-    String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
+    private final String expectedUserID = "123456";
+    private final String expectedUsername = "username";
+    private final String expectedPassword = "password";
+    private final String expectedEncodedPassword = "encodedPassword";
+    private final String expectedEmail = "email";
+    private final String expectedSecretWord = "secret";
+    private final String expectedActivationCode = "activation";
+    private final String expectedTokenID = "reg-token-id";
+    private final String expectedAccessToken = "a-token";
+    private final String expectedRefreshToken = "r-token";
+    private final String expectedRegistrationID = "reg-id";
+    private final String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
 
-    String[] expectedRoles = new String[]{ROLE_USER.name()};
+    private final String[] expectedRoles = new String[]{ROLE_USER.name()};
 
-    JwtParser regTokenParser = Jwts.parserBuilder()
+    private final JwtParser regTokenParser = Jwts.parserBuilder()
         .setSigningKey(Keys.hmacShaKeyFor(Decoders.BASE64.decode(regTokenSecretKey)))
         .build();
-    Instant expectedCreatedAt = Instant.now();
+    private final Instant expectedCreatedAt = Instant.now();
 
     @Test
     void signup() {

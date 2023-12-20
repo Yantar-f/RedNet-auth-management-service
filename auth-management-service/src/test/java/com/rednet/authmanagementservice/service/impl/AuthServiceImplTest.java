@@ -27,12 +27,16 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.apache.commons.lang.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 import static com.rednet.authmanagementservice.config.EnumRoles.ROLE_USER;
@@ -44,13 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class AuthServiceImplTest {
+    private static final int TEST_REPETITIONS_COUNT = 3;
+
+    Random  rand = new Random();
+    int     stringLengthBound = 200;
+
     private final AccountRepository       accountRepository= mock(AccountRepository.class);
     private final RegistrationRepository  registrationRepository = mock(RegistrationRepository.class);
     private final ActivationCodeGenerator activationCodeGenerator = mock(ActivationCodeGenerator.class);
@@ -71,17 +76,17 @@ class AuthServiceImplTest {
         jwtUtil
     );
 
-    private final String expectedUserID = "123456";
-    private final String expectedUsername = "username";
-    private final String expectedPassword = "password";
-    private final String expectedEncodedPassword = "encodedPassword";
-    private final String expectedEmail = "email";
-    private final String expectedSecretWord = "secret";
-    private final String expectedActivationCode = "activation";
-    private final String expectedTokenID = "reg-token-id";
-    private final String expectedAccessToken = "a-token";
-    private final String expectedRefreshToken = "r-token";
-    private final String expectedRegistrationID = "reg-id";
+    private final String expectedUserID = String.valueOf(rand.nextInt());
+    private final String expectedUsername = randString();
+    private final String expectedPassword = randString();
+    private final String expectedEncodedPassword = randString();
+    private final String expectedEmail = randString();
+    private final String expectedSecretWord = randString();
+    private final String expectedActivationCode = randString();
+    private final String expectedTokenID = randString();
+    private final String expectedAccessToken = randString();
+    private final String expectedRefreshToken = randString();
+    private final String expectedRegistrationID = randString();
     private final String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
 
     private final String[] expectedRoles = new String[]{ROLE_USER.name()};
@@ -91,7 +96,21 @@ class AuthServiceImplTest {
         .build();
     private final Instant expectedCreatedAt = Instant.now();
 
-    @Test
+    @AfterEach
+    public void after() {
+        verifyNoMoreInteractions(
+                accountRepository,
+                registrationRepository,
+                activationCodeGenerator,
+                tokenIDGenerator,
+                passwordEncoder,
+                sessionService,
+                emailService,
+                jwtUtil
+        );
+    }
+
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signup() {
         SignupRequestBody expectedBody = new SignupRequestBody(
             expectedUsername,
@@ -120,6 +139,7 @@ class AuthServiceImplTest {
         verify(passwordEncoder).encode(eq(expectedPassword));
         verify(activationCodeGenerator).generate();
         verify(tokenIDGenerator).generate();
+        verify(jwtUtil).generateRegistrationTokenBuilder();
 
         verify(emailService, atLeastOnce()).sendRegistrationActivationMessage(
             eq(expectedEmail),
@@ -136,7 +156,7 @@ class AuthServiceImplTest {
         ));
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signup_OccupiedValues() {
         Account expectedAccount = new Account(
             expectedUsername,
@@ -160,14 +180,9 @@ class AuthServiceImplTest {
         assertThrows(OccupiedValueException.class, () -> authService.signup(expectedBody));
 
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
-        verify(passwordEncoder, never()).encode(any());
-        verify(activationCodeGenerator, never()).generate();
-        verify(tokenIDGenerator, never()).generate();
-        verify(emailService, never()).sendRegistrationActivationMessage(any(), any());
-        verify(registrationRepository, never()).save(any(), any());
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signin() {
         Account expectedAccount = new Account(
             expectedUsername,
@@ -212,7 +227,7 @@ class AuthServiceImplTest {
         );
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signin_InvalidAccountData_InvalidUserIdentifier() {
         SigninRequestBody body = new SigninRequestBody(expectedUsername, expectedPassword);
 
@@ -221,11 +236,9 @@ class AuthServiceImplTest {
         assertThrows(InvalidAccountDataException.class, () -> authService.signin(body));
 
         verify(accountRepository).findEagerByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
-        verify(passwordEncoder, never()).matches(any(), any());
-        verify(sessionService, never()).createSession(any(), any());
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signin_InvalidAccountData_InvalidPassword() {
         Account expectedAccount = new Account(
             expectedUsername,
@@ -246,10 +259,9 @@ class AuthServiceImplTest {
 
         verify(accountRepository).findEagerByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
         verify(passwordEncoder).matches(eq(expectedPassword), eq(expectedEncodedPassword));
-        verify(sessionService, never()).createSession(any(), any());
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signout() {
         assertDoesNotThrow(() -> authService.signout(expectedRefreshToken));
 
@@ -282,7 +294,7 @@ class AuthServiceImplTest {
         verify(sessionService).refreshSession(eq("old-token"));
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void verifyEmail() {
         Account expectedAccount = new Account(
             expectedUsername,
@@ -329,6 +341,7 @@ class AuthServiceImplTest {
         });
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
+        verify(registrationRepository).delete(eq(expectedRegistrationID));
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
 
         verify(accountRepository).save(argThat(account ->
@@ -365,11 +378,9 @@ class AuthServiceImplTest {
         assertThrows(InvalidRegistrationDataException.class, () -> authService.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
-        verify(accountRepository, never()).save(any());
-        verify(sessionService, never()).createSession(any(), any());
     }
 
-    @Test
+    @RepeatedTest(TEST_REPETITIONS_COUNT)
     void verifyEmail_OccupiedValues() {
         Account expectedAccount = new Account(
             expectedUsername,
@@ -397,8 +408,8 @@ class AuthServiceImplTest {
         assertThrows(OccupiedValueException.class, () -> authService.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
+        verify(registrationRepository).delete(eq(expectedRegistrationID));
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
-        verify(sessionService, never()).createSession(any(), any());
     }
 
     @Test
@@ -459,11 +470,6 @@ class AuthServiceImplTest {
         assertThrows(InvalidTokenException.class, () -> authService.resendEmailVerification(expectedRegToken));
 
         verify(jwtUtil).getRegistrationTokenParser();
-        verify(activationCodeGenerator, never()).generate();
-        verify(tokenIDGenerator, never()).generate();
-        verify(jwtUtil, never()).generateRegistrationTokenBuilder();
-        verify(registrationRepository, never()).find(any());
-        verify(emailService, never()).sendRegistrationActivationMessage(any(), any());
     }
 
     @Test
@@ -477,10 +483,6 @@ class AuthServiceImplTest {
 
         verify(jwtUtil).getRegistrationTokenParser();
         verify(registrationRepository).find(eq("id1"));
-        verify(activationCodeGenerator, never()).generate();
-        verify(tokenIDGenerator, never()).generate();
-        verify(jwtUtil, never()).generateRegistrationTokenBuilder();
-        verify(emailService, never()).sendRegistrationActivationMessage(any(), any());
     }
 
     private boolean compareStringArraysContent(String[] expectedRoles, String[] roles) {
@@ -495,5 +497,13 @@ class AuthServiceImplTest {
         return Jwts.builder()
             .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(regTokenSecretKey)))
             .claim("test", "registration");
+    }
+
+    private int randStringLength() {
+        return rand.nextInt(stringLengthBound - 1) + 1;
+    }
+
+    private String randString() {
+        return RandomStringUtils.random(randStringLength());
     }
 }

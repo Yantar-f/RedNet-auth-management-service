@@ -65,7 +65,7 @@ class AuthServiceImplTest {
     private final EmailService            emailService = mock(EmailService.class);
     private final JwtUtil                 jwtUtil = mock(JwtUtil.class);
 
-    private final AuthService authService = new AuthServiceImpl(
+    private final AuthService sut = new AuthServiceImpl(
         accountRepository,
         registrationRepository,
         activationCodeGenerator,
@@ -126,7 +126,7 @@ class AuthServiceImplTest {
         when(jwtUtil.generateRegistrationTokenBuilder()).thenReturn(generateTestRegTokenBuilder());
 
         assertDoesNotThrow(() -> {
-            RegistrationCredentials registrationCredentials = authService.signup(expectedBody);
+            RegistrationCredentials registrationCredentials = sut.signup(expectedBody);
 
             Claims claims = regTokenParser.parseClaimsJws(registrationCredentials.registrationToken()).getBody();
 
@@ -177,7 +177,7 @@ class AuthServiceImplTest {
 
         when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
 
-        assertThrows(OccupiedValueException.class, () -> authService.signup(expectedBody));
+        assertThrows(OccupiedValueException.class, () -> sut.signup(expectedBody));
 
         verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
     }
@@ -210,7 +210,7 @@ class AuthServiceImplTest {
         when(sessionService.createSession(any(), any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            SessionDTO sessionDTO = authService.signin(body);
+            SessionDTO sessionDTO = sut.signin(body);
 
             assertEquals(expectedUserID, sessionDTO.getUserID());
             assertEquals(expectedAccessToken, sessionDTO.getAccessToken());
@@ -233,7 +233,7 @@ class AuthServiceImplTest {
 
         when(accountRepository.findEagerByUsernameOrEmail(any(), any())).thenReturn(Optional.empty());
 
-        assertThrows(InvalidAccountDataException.class, () -> authService.signin(body));
+        assertThrows(InvalidAccountDataException.class, () -> sut.signin(body));
 
         verify(accountRepository).findEagerByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
     }
@@ -255,7 +255,7 @@ class AuthServiceImplTest {
         when(accountRepository.findEagerByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
-        assertThrows(InvalidAccountDataException.class, () -> authService.signin(body));
+        assertThrows(InvalidAccountDataException.class, () -> sut.signin(body));
 
         verify(accountRepository).findEagerByUsernameOrEmail(eq(expectedUsername), eq(expectedUsername));
         verify(passwordEncoder).matches(eq(expectedPassword), eq(expectedEncodedPassword));
@@ -263,7 +263,7 @@ class AuthServiceImplTest {
 
     @RepeatedTest(TEST_REPETITIONS_COUNT)
     void signout() {
-        assertDoesNotThrow(() -> authService.signout(expectedRefreshToken));
+        assertDoesNotThrow(() -> sut.signout(expectedRefreshToken));
 
         verify(sessionService).deleteSession(eq(expectedRefreshToken));
     }
@@ -282,7 +282,7 @@ class AuthServiceImplTest {
         when(sessionService.refreshSession(any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            SessionDTO sessionDTO = authService.refreshTokens("old-token");
+            SessionDTO sessionDTO = sut.refreshTokens("old-token");
 
             assertEquals(expectedUserID, sessionDTO.getUserID());
             assertEquals(expectedAccessToken, sessionDTO.getAccessToken());
@@ -332,7 +332,7 @@ class AuthServiceImplTest {
         when(sessionService.createSession(any(), any())).thenReturn(expectedSession);
 
         assertDoesNotThrow(() -> {
-            SessionDTO actualSessionDTO = authService.verifyEmail(expectedBody);
+            SessionDTO actualSessionDTO = sut.verifyEmail(expectedBody);
 
             assertEquals(expectedUserID, actualSessionDTO.getUserID());
             assertEquals(expectedAccessToken, actualSessionDTO.getAccessToken());
@@ -375,7 +375,7 @@ class AuthServiceImplTest {
 
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
 
-        assertThrows(InvalidRegistrationDataException.class, () -> authService.verifyEmail(expectedBody));
+        assertThrows(InvalidRegistrationDataException.class, () -> sut.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
     }
@@ -405,7 +405,7 @@ class AuthServiceImplTest {
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
         when(accountRepository.findByUsernameOrEmail(any(), any())).thenReturn(Optional.of(expectedAccount));
 
-        assertThrows(OccupiedValueException.class, () -> authService.verifyEmail(expectedBody));
+        assertThrows(OccupiedValueException.class, () -> sut.verifyEmail(expectedBody));
 
         verify(registrationRepository).find(eq(expectedRegistrationID));
         verify(registrationRepository).delete(eq(expectedRegistrationID));
@@ -435,7 +435,7 @@ class AuthServiceImplTest {
         when(registrationRepository.find(any())).thenReturn(Optional.of(expectedRegistration));
 
         assertDoesNotThrow(() -> {
-            String newRegToken = authService.resendEmailVerification(expectedRegistrationToken);
+            String newRegToken = sut.resendEmailVerification(expectedRegistrationToken);
 
             Claims claims = regTokenParser.parseClaimsJws(newRegToken).getBody();
 
@@ -467,7 +467,7 @@ class AuthServiceImplTest {
 
         when(jwtUtil.getRegistrationTokenParser()).thenReturn(regTokenParser);
 
-        assertThrows(InvalidTokenException.class, () -> authService.resendEmailVerification(expectedRegToken));
+        assertThrows(InvalidTokenException.class, () -> sut.resendEmailVerification(expectedRegToken));
 
         verify(jwtUtil).getRegistrationTokenParser();
     }
@@ -479,7 +479,7 @@ class AuthServiceImplTest {
         when(jwtUtil.getRegistrationTokenParser()).thenReturn(regTokenParser);
         when(registrationRepository.find(any())).thenReturn(Optional.empty());
 
-        assertThrows(InvalidTokenException.class, () -> authService.resendEmailVerification(expectedRegToken));
+        assertThrows(InvalidTokenException.class, () -> sut.resendEmailVerification(expectedRegToken));
 
         verify(jwtUtil).getRegistrationTokenParser();
         verify(registrationRepository).find(eq("id1"));

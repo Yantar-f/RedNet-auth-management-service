@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,19 +125,18 @@ class AuthServiceImplTest {
         assertEquals(expectedTokenID, claims.getId());
         assertNotNull(claims.getSubject());
 
-        verify(emailService, atLeastOnce()).sendRegistrationActivationMessage(
-            eq(expectedEmail),
-            eq(expectedActivationCode)
-        );
+        verify(emailService, atLeastOnce())
+                .sendRegistrationActivationMessage(eq(expectedEmail), eq(expectedActivationCode));
 
-        verify(registrationRepository).save(any(), argThat(reg ->
-            reg.getUsername().equals(expectedUsername) &&
-            reg.getPassword().equals(expectedEncodedPassword) &&
-            reg.getEmail().equals(expectedEmail) &&
-            reg.getSecretWord().equals(expectedSecretWord) &&
-            reg.getActivationCode().equals(expectedActivationCode) &&
-            reg.getTokenID().equals(expectedTokenID)
-        ));
+        verify(registrationRepository)
+                .save(any(), argThat(reg ->
+                        reg.getUsername().equals(expectedUsername) &&
+                        reg.getPassword().equals(expectedEncodedPassword) &&
+                        reg.getEmail().equals(expectedEmail) &&
+                        reg.getSecretWord().equals(expectedSecretWord) &&
+                        reg.getActivationCode().equals(expectedActivationCode) &&
+                        reg.getTokenID().equals(expectedTokenID)
+                ));
     }
 
     @Test
@@ -203,10 +201,11 @@ class AuthServiceImplTest {
 
         assertEquals(expectedSessionDTO, actualSessionDTO);
 
-        verify(sessionService).createSession(
-            eq(expectedUserID),
-            argThat(actualRoles -> compareStringArraysContent(expectedRoles, actualRoles))
-        );
+        verify(sessionService)
+                .createSession(
+                        eq(expectedUserID),
+                        argThat(actualRoles -> compareStringArraysContent(expectedRoles, actualRoles))
+                );
     }
 
     @Test
@@ -245,7 +244,8 @@ class AuthServiceImplTest {
     void signout() {
         sut.signout(expectedRefreshToken);
 
-        verify(sessionService).deleteSession(eq(expectedRefreshToken));
+        verify(sessionService)
+                .deleteSession(eq(expectedRefreshToken));
     }
 
     @Test
@@ -269,7 +269,8 @@ class AuthServiceImplTest {
 
         assertEquals(expectedSessionDTO, actualSessionDTO);
 
-        verify(sessionService).refreshSession(eq(oldRefreshToken));
+        verify(sessionService)
+                .refreshSession(eq(oldRefreshToken));
     }
 
     @Test
@@ -333,8 +334,11 @@ class AuthServiceImplTest {
 
         assertEquals(expectedSessionDTO, actualSessionDTO);
 
-        verify(registrationRepository).delete(eq(expectedRegistrationID));
-        verify(accountRepository).save(eq(expectedUnsavedAccount));
+        verify(registrationRepository)
+                .delete(eq(expectedRegistrationID));
+
+        verify(accountRepository)
+                .save(eq(expectedUnsavedAccount));
 
         verify(sessionService).createSession(
             eq(expectedUserID),
@@ -390,9 +394,14 @@ class AuthServiceImplTest {
 
         assertThrows(OccupiedValueException.class, () -> sut.verifyEmail(expectedBody));
 
-        verify(registrationRepository).find(eq(expectedRegistrationID));
-        verify(registrationRepository).delete(eq(expectedRegistrationID));
-        verify(accountRepository).findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
+        verify(registrationRepository)
+                .find(eq(expectedRegistrationID));
+
+        verify(registrationRepository)
+                .delete(eq(expectedRegistrationID));
+
+        verify(accountRepository)
+                .findByUsernameOrEmail(eq(expectedUsername), eq(expectedEmail));
     }
 
     @Test
@@ -436,21 +445,35 @@ class AuthServiceImplTest {
             assertNotNull(claims.getSubject());
         });
 
-        verify(activationCodeGenerator).generate();
-        verify(tokenIDGenerator).generate();
-        verify(jwtUtil).getRegistrationTokenParser();
-        verify(jwtUtil).generateRegistrationTokenBuilder();
-        verify(registrationRepository).find(eq(expectedRegistrationID));
+        verify(activationCodeGenerator)
+                .generate();
 
-        verify(registrationRepository).save(eq(expectedRegistrationID), argThat(reg ->
-            reg.getUsername().equals(expectedUsername) &&
-            reg.getPassword().equals(expectedEncodedPassword) &&
-            reg.getEmail().equals(expectedEmail) &&
-            reg.getSecretWord().equals(expectedSecretWord) &&
-            reg.getTokenID().equals(expectedTokenID)
-        ));
+        verify(tokenIDGenerator)
+                .generate();
 
-        verify(emailService).sendRegistrationActivationMessage(eq(expectedEmail), any());
+        verify(jwtUtil)
+                .getRegistrationTokenParser();
+
+        verify(jwtUtil)
+                .generateRegistrationTokenBuilder();
+
+        verify(registrationRepository)
+                .find(eq(expectedRegistrationID));
+
+        verify(registrationRepository)
+                .save(
+                        eq(expectedRegistrationID),
+                        argThat(reg ->
+                                reg.getUsername().equals(expectedUsername) &&
+                                reg.getPassword().equals(expectedEncodedPassword) &&
+                                reg.getEmail().equals(expectedEmail) &&
+                                reg.getSecretWord().equals(expectedSecretWord) &&
+                                reg.getTokenID().equals(expectedTokenID)
+                        )
+                );
+
+        verify(emailService)
+                .sendRegistrationActivationMessage(eq(expectedEmail), any());
     }
 
     @Test
@@ -461,7 +484,8 @@ class AuthServiceImplTest {
 
         assertThrows(InvalidTokenException.class, () -> sut.resendEmailVerification(expectedRegToken));
 
-        verify(jwtUtil).getRegistrationTokenParser();
+        verify(jwtUtil)
+                .getRegistrationTokenParser();
     }
 
     @Test
@@ -476,8 +500,11 @@ class AuthServiceImplTest {
 
         assertThrows(InvalidTokenException.class, () -> sut.resendEmailVerification(expectedRegToken));
 
-        verify(jwtUtil).getRegistrationTokenParser();
-        verify(registrationRepository).find(eq("id1"));
+        verify(jwtUtil)
+                .getRegistrationTokenParser();
+
+        verify(registrationRepository)
+                .find(eq("id1"));
     }
 
     private boolean compareStringArraysContent(String[] expectedRoles, String[] roles) {

@@ -54,14 +54,14 @@ class AuthServiceImplTest {
     Random  rand = new Random();
     int     stringLengthBound = 200;
 
-    private final AccountRepository       accountRepository= mock(AccountRepository.class);
-    private final RegistrationRepository  registrationRepository = mock(RegistrationRepository.class);
-    private final ActivationCodeGenerator activationCodeGenerator = mock(ActivationCodeGenerator.class);
-    private final TokenIDGenerator        tokenIDGenerator = mock(TokenIDGenerator.class);
-    private final PasswordEncoder         passwordEncoder = mock(PasswordEncoder.class);
-    private final SessionService          sessionService = mock(SessionService.class);
-    private final EmailService            emailService = mock(EmailService.class);
-    private final JwtUtil                 jwtUtil = mock(JwtUtil.class);
+    private final AccountRepository       accountRepository         = mock(AccountRepository.class);
+    private final RegistrationRepository  registrationRepository    = mock(RegistrationRepository.class);
+    private final ActivationCodeGenerator activationCodeGenerator   = mock(ActivationCodeGenerator.class);
+    private final TokenIDGenerator  tokenIDGenerator  = mock(TokenIDGenerator.class);
+    private final PasswordEncoder   passwordEncoder   = mock(PasswordEncoder.class);
+    private final SessionService    sessionService    = mock(SessionService.class);
+    private final EmailService      emailService      = mock(EmailService.class);
+    private final JwtUtil           jwtUtil           = mock(JwtUtil.class);
 
     private final AuthService sut = new AuthServiceImpl(
         accountRepository,
@@ -74,18 +74,18 @@ class AuthServiceImplTest {
         jwtUtil
     );
 
-    private final String expectedUserID = String.valueOf(rand.nextInt());
-    private final String expectedUsername = randString();
-    private final String expectedPassword = randString();
-    private final String expectedEncodedPassword = randString();
-    private final String expectedEmail = randString();
-    private final String expectedSecretWord = randString();
-    private final String expectedActivationCode = randString();
-    private final String expectedTokenID = randString();
-    private final String expectedAccessToken = randString();
-    private final String expectedRefreshToken = randString();
-    private final String expectedRegistrationID = randString();
-    private final String regTokenSecretKey = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
+    private final String expectedUserID             = String.valueOf(rand.nextInt());
+    private final String expectedUsername           = randString();
+    private final String expectedPassword           = randString();
+    private final String expectedEncodedPassword    = randString();
+    private final String expectedEmail              = randString();
+    private final String expectedSecretWord         = randString();
+    private final String expectedActivationCode     = randString();
+    private final String expectedTokenID            = randString();
+    private final String expectedAccessToken        = randString();
+    private final String expectedRefreshToken       = randString();
+    private final String expectedRegistrationID     = randString();
+    private final String regTokenSecretKey          = "g6rwN6RboZLiFI6LsrOWuNWDpyUoBkDfZDjMt0f3vA8n+TvRLLzG6Z5QQwqA4y4h";
 
     private final String[] expectedRoles = new String[]{ROLE_USER.name()};
 

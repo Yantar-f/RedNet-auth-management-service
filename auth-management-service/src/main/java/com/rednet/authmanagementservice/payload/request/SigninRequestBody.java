@@ -6,7 +6,7 @@ public record SigninRequestBody(
     @NotBlank(message = "user identifier should be not blank")
     String userIdentifier,
 
-    @NotBlank(message = "password should be not blank")
+    @NotBlank(message = "encodedPassword should be not blank")
     String password
 ) {
 }

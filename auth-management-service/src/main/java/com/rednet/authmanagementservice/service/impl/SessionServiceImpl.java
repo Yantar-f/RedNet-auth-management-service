@@ -1,13 +1,12 @@
 package com.rednet.authmanagementservice.service.impl;
 
+import com.rednet.authmanagementservice.config.EnumRoles;
 import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.payload.request.CreateSessionRequestBody;
 import com.rednet.authmanagementservice.payload.request.RefreshSessionRequestBody;
 import com.rednet.authmanagementservice.service.SessionService;
-import com.rednet.authmanagementservice.service.SessionServiceClient;
+import com.rednet.authmanagementservice.client.SessionServiceClient;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class SessionServiceImpl implements SessionService {
@@ -18,7 +17,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public Session createSession(String userID, String[] roles) {
+    public Session createSession(String userID, EnumRoles[] roles) {
         return serviceClient.createSession(new CreateSessionRequestBody(userID, roles)).getBody();
     }
 

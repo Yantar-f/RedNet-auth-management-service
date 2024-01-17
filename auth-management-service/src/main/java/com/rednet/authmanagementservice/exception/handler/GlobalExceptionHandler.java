@@ -1,11 +1,11 @@
 package com.rednet.authmanagementservice.exception.handler;
 
 import com.rednet.authmanagementservice.exception.ErrorResponseBody;
-import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
-import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationDataException;
-import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
-import com.rednet.authmanagementservice.exception.impl.MissingTokenException;
-import com.rednet.authmanagementservice.exception.impl.OccupiedValueException;
+import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
+import com.rednet.authmanagementservice.exception.InvalidRegistrationDataException;
+import com.rednet.authmanagementservice.exception.InvalidTokenException;
+import com.rednet.authmanagementservice.exception.MissingTokenException;
+import com.rednet.authmanagementservice.exception.OccupiedValueException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -45,9 +45,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
         @NonNull HttpRequestMethodNotSupportedException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -55,9 +55,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMediaTypeNotSupported(
         @NonNull HttpMediaTypeNotSupportedException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -65,9 +65,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMediaTypeNotAcceptable(
         @NonNull HttpMediaTypeNotAcceptableException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -75,9 +75,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMissingServletRequestParameter(
         @NonNull MissingServletRequestParameterException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -85,9 +85,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMissingServletRequestPart(
         @NonNull MissingServletRequestPartException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -95,9 +95,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleServletRequestBindingException(
         @NonNull ServletRequestBindingException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -105,9 +105,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
         @NonNull MethodArgumentNotValidException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         FieldError fieldError = ex.getFieldError();
         String errorMessage = fieldError != null ? fieldError.getDefaultMessage() : "Undefined constraint violation";
@@ -118,9 +118,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(
         @NonNull NoHandlerFoundException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(NOT_FOUND, extractPath(request), ex.getMessage());
     }
@@ -128,9 +128,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleAsyncRequestTimeoutException(
         @NonNull AsyncRequestTimeoutException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(SERVICE_UNAVAILABLE, extractPath(request), ex.getMessage());
     }
@@ -138,9 +138,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotWritable(
         @NonNull HttpMessageNotWritableException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(INTERNAL_SERVER_ERROR, extractPath(request), ex.getMessage());
     }
@@ -148,9 +148,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(
         @NonNull HttpMessageNotReadableException ex,
-        @NonNull HttpHeaders headers,
+        @NonNull HttpHeaders    headers,
         @NonNull HttpStatusCode status,
-        @NonNull WebRequest request
+        @NonNull WebRequest     request
     ) {
         return generateErrorResponse(BAD_REQUEST, extractPath(request), ex.getMessage());
     }
@@ -181,9 +181,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ResponseEntity<Object> generateErrorResponse(
-        HttpStatus httpStatus,
-        String path,
-        String errorMessage
+        HttpStatus  httpStatus,
+        String      path,
+        String      errorMessage
     ) {
         return ResponseEntity.status(httpStatus.value()).body(
             new ErrorResponseBody(

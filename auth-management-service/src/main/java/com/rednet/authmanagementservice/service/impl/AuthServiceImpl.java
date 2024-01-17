@@ -3,14 +3,12 @@ package com.rednet.authmanagementservice.service.impl;
 import com.rednet.authmanagementservice.config.EnumRoles;
 import com.rednet.authmanagementservice.entity.Account;
 import com.rednet.authmanagementservice.entity.Registration;
-import com.rednet.authmanagementservice.entity.Role;
-import com.rednet.authmanagementservice.dto.SessionDTO;
-import com.rednet.authmanagementservice.exception.impl.InvalidRegistrationDataException;
-import com.rednet.authmanagementservice.exception.impl.InvalidTokenException;
-import com.rednet.authmanagementservice.exception.impl.OccupiedValueException;
-import com.rednet.authmanagementservice.exception.impl.InvalidAccountDataException;
+import com.rednet.authmanagementservice.entity.Session;
+import com.rednet.authmanagementservice.exception.InvalidRegistrationDataException;
+import com.rednet.authmanagementservice.exception.InvalidTokenException;
+import com.rednet.authmanagementservice.exception.InvalidAccountDataException;
 import com.rednet.authmanagementservice.model.RegistrationCredentials;
-import com.rednet.authmanagementservice.model.RegistrationVerifications;
+import com.rednet.authmanagementservice.model.RegistrationVerificationData;
 import com.rednet.authmanagementservice.payload.request.SigninRequestBody;
 import com.rednet.authmanagementservice.payload.request.SignupRequestBody;
 import com.rednet.authmanagementservice.repository.AccountRepository;
@@ -36,24 +34,24 @@ import static com.rednet.authmanagementservice.config.EnumTokenType.REGISTRATION
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private final AccountRepository accountRepository;
-    private final RegistrationRepository registrationRepository;
-    private final ActivationCodeGenerator activationCodeGenerator;
-    private final TokenIDGenerator tokenIDGenerator;
-    private final PasswordEncoder passwordEncoder;
-    private final SessionService sessionService;
-    private final EmailService emailService;
-    private final JwtUtil jwtUtil;
+    private final AccountRepository         accountRepository;
+    private final RegistrationRepository    registrationRepository;
+    private final ActivationCodeGenerator   activationCodeGenerator;
+    private final TokenIDGenerator          tokenIDGenerator;
+    private final PasswordEncoder           passwordEncoder;
+    private final SessionService            sessionService;
+    private final EmailService              emailService;
+    private final JwtUtil                   jwtUtil;
 
     public AuthServiceImpl(
-        AccountRepository accountRepository,
-        RegistrationRepository registrationRepository,
-        ActivationCodeGenerator activationCodeGenerator,
-        TokenIDGenerator tokenIDGenerator,
-        PasswordEncoder passwordEncoder,
-        SessionService sessionService,
-        EmailService emailService,
-        JwtUtil jwtUtil
+            AccountRepository       accountRepository,
+            RegistrationRepository  registrationRepository,
+            ActivationCodeGenerator activationCodeGenerator,
+            TokenIDGenerator        tokenIDGenerator,
+            PasswordEncoder         passwordEncoder,
+            SessionService          sessionService,
+            EmailService            emailService,
+            JwtUtil                 jwtUtil
     ) {
         this.accountRepository = accountRepository;
         this.registrationRepository = registrationRepository;
@@ -67,43 +65,41 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public RegistrationCredentials signup(SignupRequestBody requestMessage) {
-        accountRepository.findByUsernameOrEmail(requestMessage.username(), requestMessage.email()).ifPresent(acc -> {
-            if (requestMessage.username().equals(acc.getUsername())) {
-                throw new OccupiedValueException("Occupied value: username [" + requestMessage.username() + "]");
-            } else {
-                throw new OccupiedValueException("Occupied value: email [" + requestMessage.email() + "]");
-            }
-        });
+//        accountRepository.findByUsernameOrEmail(requestMessage.username(), requestMessage.email()).ifPresent(acc -> {
+//            if (requestMessage.username().equals(acc.getUsername())) {
+//                throw new OccupiedValueException("Occupied value: username [" + requestMessage.username() + "]");
+//            } else {
+//                throw new OccupiedValueException("Occupied value: email [" + requestMessage.email() + "]");
+//            }
+//        });
 
-        String
-            activationCode = activationCodeGenerator.generate(),
-            registrationID = UUID.randomUUID().toString(),
-            tokenID = tokenIDGenerator.generate(),
-            registrationToken = generateRegistrationToken(registrationID, tokenID);
+        String activationCode = activationCodeGenerator.generate();
+        String registrationID = UUID.randomUUID().toString();
+        String tokenID = tokenIDGenerator.generate();
 
         registrationRepository.save(registrationID, new Registration(
-            activationCode,
-            tokenID,
-            requestMessage.username(),
-            passwordEncoder.encode(requestMessage.password()),
-            requestMessage.email(),
-            requestMessage.secretWord()
+                registrationID,
+                activationCode,
+                tokenID,
+                requestMessage.username(),
+                passwordEncoder.encode(requestMessage.password()),
+                requestMessage.email(),
+                requestMessage.secretWord()
         ));
 
         emailService.sendRegistrationActivationMessage(requestMessage.email(), activationCode);
 
-        return new RegistrationCredentials(registrationID, registrationToken);
+        return new RegistrationCredentials(registrationID, generateRegistrationToken(registrationID, tokenID));
     }
 
     @Override
-    public SessionDTO signin(SigninRequestBody requestMessage) {
+    public Session signin(SigninRequestBody requestMessage) {
         Account account = accountRepository
             .findEagerByUsernameOrEmail(requestMessage.userIdentifier(), requestMessage.userIdentifier())
             .orElseThrow(InvalidAccountDataException::new);
 
-        if (!passwordEncoder.matches(requestMessage.password(), account.getPassword())) {
+        if ( ! passwordEncoder.matches(requestMessage.password(), account.getPassword()))
             throw new InvalidAccountDataException();
-        }
 
         return createSession(account);
     }
@@ -114,43 +110,46 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public SessionDTO refreshTokens(String refreshToken) {
-        return new SessionDTO(sessionService.refreshSession(refreshToken));
+    public Session refreshTokens(String refreshToken) {
+        return sessionService.refreshSession(refreshToken);
     }
 
     @Override
-    public SessionDTO verifyEmail(RegistrationVerifications registrationVerifications) {
+    public Session verifyEmail(RegistrationVerificationData registrationVerificationData) {
         Registration registration = registrationRepository
-            .find(registrationVerifications.registrationID())
+            .find(registrationVerificationData.registrationID())
             .orElseThrow(InvalidRegistrationDataException::new);
 
-        if ( ! registration.getActivationCode().equals(registrationVerifications.activationCode())) {
+        if ( ! registration.getActivationCode().equals(registrationVerificationData.activationCode()))
             throw new InvalidRegistrationDataException();
-        }
 
-        registrationRepository.delete(registrationVerifications.registrationID());
+        registrationRepository.delete(registrationVerificationData.registrationID());
 
-        accountRepository.findByUsernameOrEmail(registration.getUsername(), registration.getEmail()).ifPresent(acc -> {
-            if (registration.getUsername().equals(acc.getUsername())) {
-                throw new OccupiedValueException("Occupied value: username [" + registration.getUsername() + "]");
-            } else {
-                throw new OccupiedValueException("Occupied value: email [" + registration.getEmail() + "]");
-            }
-        });
+//        accountRepository.findByUsernameOrEmail(registration.getUsername(), registration.getEmail()).ifPresent(acc -> {
+//            if (registration.getUsername().equals(acc.getUsername())) {
+//                throw new OccupiedValueException("Occupied value: username [" + registration.getUsername() + "]");
+//            } else {
+//                throw new OccupiedValueException("Occupied value: email [" + registration.getEmail() + "]");
+//            }
+//        });
 
-        return createSession(accountRepository.save(new Account(
+        return createSession(accountRepository.save(new Account("1",
             registration.getUsername(),
-            registration.getPassword(),
+            registration.getEncodedPassword(),
             registration.getEmail(),
-            registration.getSecretWord(),
-            Set.of(new Role(EnumRoles.ROLE_USER))
+            registration.getEncodedSecretWord(),
+            Set.of(EnumRoles.ROLE_USER)
         )));
     }
 
     @Override
     public String resendEmailVerification(String registrationToken) {
         try {
-            Claims claims = jwtUtil.getRegistrationTokenParser().parseClaimsJws(registrationToken).getBody();
+            Claims claims = jwtUtil
+                    .getRegistrationTokenParser()
+                    .parseClaimsJws(registrationToken)
+                    .getBody();
+
             String registrationID = claims.getSubject();
             String tokenID = claims.getId();
 
@@ -158,7 +157,8 @@ public class AuthServiceImpl implements AuthService {
                 .find(registrationID)
                 .orElseThrow(() -> new InvalidTokenException(REGISTRATION_TOKEN));
 
-            if ( ! tokenID.equals(registration.getTokenID())) throw new InvalidTokenException(REGISTRATION_TOKEN);
+            if ( ! tokenID.equals(registration.getTokenID()))
+                throw new InvalidTokenException(REGISTRATION_TOKEN);
 
             String newActivationCode = activationCodeGenerator.generate();
             String newTokenID = tokenIDGenerator.generate();
@@ -182,11 +182,11 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private SessionDTO createSession(Account account) {
-        return new SessionDTO(sessionService.createSession(
+    private Session createSession(Account account) {
+        return sessionService.createSession(
             String.valueOf(account.getID()),
-            account.getRoles().stream().map(Role::getDesignation).toArray(String[]::new)
-        ));
+            account.getRoles().toArray(EnumRoles[]::new)
+        );
     }
 
     private String generateRegistrationToken(String registrationID, String tokenID) {

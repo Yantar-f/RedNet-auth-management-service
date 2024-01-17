@@ -25,17 +25,17 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final int passwordEncoderStrength;
-    private final ApiTokenFilter apiTokenFilter;
-    private final AccessDeniedHandler accessDeniedHandler;
-    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final int                       passwordEncoderStrength;
+    private final ApiTokenFilter            apiTokenFilter;
+    private final AccessDeniedHandler       accessDeniedHandler;
+    private final AuthenticationEntryPoint  authenticationEntryPoint;
 
     public SecurityConfig(
         @Value("${rednet.app.password-encoder-strength}") int passwordEncoderStrength,
-        ApiTokenFilter apiTokenFilter,
-        AccessDeniedHandler accessDeniedHandler,
-        AuthenticationEntryPoint authenticationEntryPoint,
-        RoleRepository roleRepository
+        ApiTokenFilter              apiTokenFilter,
+        AccessDeniedHandler         accessDeniedHandler,
+        AuthenticationEntryPoint    authenticationEntryPoint,
+        RoleRepository              roleRepository
     ) {
         this.passwordEncoderStrength = passwordEncoderStrength;
         this.apiTokenFilter = apiTokenFilter;

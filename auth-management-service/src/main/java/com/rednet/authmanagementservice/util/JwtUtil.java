@@ -5,6 +5,6 @@ import io.jsonwebtoken.JwtParser;
 
 public interface JwtUtil {
     JwtBuilder  generateRegistrationTokenBuilder();
-    JwtParser   getRegistrationTokenParser      ();
-    JwtParser   getApiTokenParser               ();
+    JwtParser   getRegistrationTokenParser();
+    JwtParser   getApiTokenParser();
 }

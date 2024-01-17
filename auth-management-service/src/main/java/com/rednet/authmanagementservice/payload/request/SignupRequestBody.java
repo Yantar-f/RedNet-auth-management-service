@@ -12,7 +12,7 @@ public record SignupRequestBody(
     @NotBlank(message = "email should be not blank")
     String email,
 
-    @Length(min = 8, max = 200, message = "password length should be between 8 and 200")
+    @Length(min = 8, max = 200, message = "encodedPassword length should be between 8 and 200")
     String password,
 
     @Length(min = 8, max = 100, message = "secret word length should be between 8 and 100")

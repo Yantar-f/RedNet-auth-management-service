@@ -39,9 +39,9 @@ public class ApiTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-        @Nonnull HttpServletRequest request,
-        @Nonnull HttpServletResponse response,
-        @Nonnull FilterChain filterChain
+        @Nonnull HttpServletRequest     request,
+        @Nonnull HttpServletResponse    response,
+        @Nonnull FilterChain            filterChain
     ) throws ServletException, IOException {
         Cookie[] cookies = request.getCookies();
 

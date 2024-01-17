@@ -1,30 +1,30 @@
 package com.rednet.authmanagementservice.entity;
 
-
-import java.io.Serializable;
-
-public class Registration implements Serializable {
+public class Registration {
+    private String ID;
     private String activationCode;
     private String tokenID;
     private String username;
-    private String password;
     private String email;
-    private String secretWord;
+    private String encodedPassword;
+    private String encodedSecretWord;
 
-    public Registration() {}
     public Registration(
-        String activationCode,
-        String tokenID, String username,
-        String password,
-        String email,
-        String secretWord
+            String ID,
+            String activationCode,
+            String tokenID,
+            String username,
+            String email,
+            String encodedPassword,
+            String encodedSecretWord
     ) {
+        this.ID = ID;
         this.activationCode = activationCode;
         this.tokenID = tokenID;
         this.username = username;
-        this.password = password;
         this.email = email;
-        this.secretWord = secretWord;
+        this.encodedPassword = encodedPassword;
+        this.encodedSecretWord = encodedSecretWord;
     }
 
     public String getActivationCode() {
@@ -51,12 +51,12 @@ public class Registration implements Serializable {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getEncodedPassword() {
+        return encodedPassword;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setEncodedPassword(String encodedPassword) {
+        this.encodedPassword = encodedPassword;
     }
 
     public String getEmail() {
@@ -67,11 +67,46 @@ public class Registration implements Serializable {
         this.email = email;
     }
 
-    public String getSecretWord() {
-        return secretWord;
+    public String getEncodedSecretWord() {
+        return encodedSecretWord;
     }
 
-    public void setSecretWord(String secretWord) {
-        this.secretWord = secretWord;
+    public void setEncodedSecretWord(String encodedSecretWord) {
+        this.encodedSecretWord = encodedSecretWord;
+    }
+
+    public String getID() {
+        return ID;
+    }
+
+    public void setID(String ID) {
+        this.ID = ID;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+
+        Registration registration = (Registration) obj;
+
+        return  ID.equals(registration.ID) &&
+                activationCode.equals(registration.activationCode) &&
+                tokenID.equals(registration.tokenID) &&
+                username.equals(registration.username) &&
+                email.equals(registration.email) &&
+                encodedPassword.equals(registration.encodedPassword) &&
+                encodedSecretWord.equals(registration.encodedSecretWord);
+    }
+
+    @Override
+    public int hashCode() {
+        return  ID.hashCode() *
+                activationCode.hashCode() *
+                tokenID.hashCode() *
+                username.hashCode() *
+                email.hashCode() *
+                encodedPassword.hashCode() *
+                encodedSecretWord.hashCode();
     }
 }

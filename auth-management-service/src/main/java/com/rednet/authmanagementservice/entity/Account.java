@@ -1,70 +1,30 @@
 package com.rednet.authmanagementservice.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
-import java.util.HashSet;
+import com.rednet.authmanagementservice.config.EnumRoles;
 import java.util.Set;
 
-@Entity
-@Table(
-    name = "accounts",
-
-    uniqueConstraints = {
-        @UniqueConstraint(name = "unique_username_constraint", columnNames = "username"),
-        @UniqueConstraint(name = "unique_email_constraint", columnNames = "email")
-    },
-
-    indexes = {
-        @Index(name = "username_index", columnList = "username"),
-        @Index(name = "email_index", columnList = "email")
-    })
 public class Account {
+    private String ID;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long ID;
-
-    @Column(name = "username")
     private String username;
 
-    @Column(name = "email")
     private String email;
 
-    @Column(name = "password")
     private String password;
 
-    @Column(name = "secret_word")
     private String secretWord;
 
-    @ManyToMany(
-        fetch = FetchType.EAGER,
-        cascade = CascadeType.MERGE)
-    @JoinTable(
-        name = "accounts_to_roles",
-        joinColumns = @JoinColumn (name = "account_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles;
+    private Set<EnumRoles> roles;
 
-    protected Account() {}
     public Account(
-        String username,
-        String password,
-        String email,
-        String secretWord,
-        Set<Role> roles
+            String ID,
+            String username,
+            String email,
+            String password,
+            String secretWord,
+            Set<EnumRoles> roles
     ) {
+        this.ID = ID;
         this.username = username;
         this.password = password;
         this.email = email;
@@ -72,11 +32,11 @@ public class Account {
         this.roles = roles;
     }
 
-    public long getID() {
+    public String getID() {
         return ID;
     }
 
-    public void setID(long ID) {
+    public void setID(String ID) {
         this.ID = ID;
     }
 
@@ -112,17 +72,17 @@ public class Account {
         this.secretWord = secretWord;
     }
 
-    public Set<Role> getRoles() {
+    public Set<EnumRoles> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<Role> roles) {
+    public void setRoles(Set<EnumRoles> roles) {
         this.roles = roles;
     }
 
     @Override
     public int hashCode() {
-        return  (int)ID *
+        return  ID.hashCode() *
                 username.hashCode() *
                 email.hashCode() *
                 password.hashCode() *
@@ -135,12 +95,12 @@ public class Account {
         if (this == obj) return true;
         if (!(obj instanceof Account account)) return false;
 
-        return  ID == account.ID &&
+        return  ID.equals(account.ID) &&
                 username.equals(account.username) &&
                 email.equals(account.email) &&
                 password.equals(account.password) &&
                 secretWord.equals(account.secretWord) &&
                 roles.size() == account.roles.size() &&
-                new HashSet<>(roles).containsAll(account.roles);
+                roles.containsAll(account.roles);
     }
 }

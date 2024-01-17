@@ -1,4 +1,6 @@
 package com.rednet.authmanagementservice.payload.request;
 
-public record CreateSessionRequestBody(String userID, String[] roles) {
+import com.rednet.authmanagementservice.config.EnumRoles;
+
+public record CreateSessionRequestBody(String userID, EnumRoles[] roles) {
 }

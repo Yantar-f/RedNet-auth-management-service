@@ -18,9 +18,9 @@ import java.util.ArrayList;
 public class AccessDeniedExceptionHandler implements AccessDeniedHandler {
     @Override
     public void handle(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        AccessDeniedException accessDeniedException
+        HttpServletRequest      request,
+        HttpServletResponse     response,
+        AccessDeniedException   accessDeniedException
     ) throws IOException, ServletException {
         HttpStatus status = HttpStatus.FORBIDDEN;
 

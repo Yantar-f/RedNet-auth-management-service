@@ -1,8 +1,6 @@
 package com.rednet.authmanagementservice.config;
 
-import com.rednet.authmanagementservice.entity.Role;
 import com.rednet.authmanagementservice.filter.ApiTokenFilter;
-import com.rednet.authmanagementservice.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,31 +18,22 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.Arrays;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final int                       passwordEncoderStrength;
-    private final ApiTokenFilter            apiTokenFilter;
-    private final AccessDeniedHandler       accessDeniedHandler;
-    private final AuthenticationEntryPoint  authenticationEntryPoint;
+    private final int passwordEncoderStrength;
+    private final ApiTokenFilter apiTokenFilter;
+    private final AccessDeniedHandler accessDeniedHandler;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
 
-    public SecurityConfig(
-        @Value("${rednet.app.password-encoder-strength}") int passwordEncoderStrength,
-        ApiTokenFilter              apiTokenFilter,
-        AccessDeniedHandler         accessDeniedHandler,
-        AuthenticationEntryPoint    authenticationEntryPoint,
-        RoleRepository              roleRepository
-    ) {
+    public SecurityConfig(@Value("${rednet.app.password-encoder-strength}") int passwordEncoderStrength,
+                          ApiTokenFilter apiTokenFilter,
+                          AccessDeniedHandler accessDeniedHandler,
+                          AuthenticationEntryPoint authenticationEntryPoint) {
         this.passwordEncoderStrength = passwordEncoderStrength;
         this.apiTokenFilter = apiTokenFilter;
         this.accessDeniedHandler = accessDeniedHandler;
         this.authenticationEntryPoint = authenticationEntryPoint;
-
-        roleRepository.saveAll(Arrays.stream(EnumRoles.values())
-            .filter(enumRole -> !roleRepository.existsByDesignation(enumRole.name()))
-            .map(Role::new).toList());
     }
 
     @Bean

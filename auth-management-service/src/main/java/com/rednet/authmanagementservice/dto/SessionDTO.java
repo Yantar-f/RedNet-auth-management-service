@@ -7,10 +7,10 @@ import java.util.HashSet;
 import java.util.List;
 
 public class SessionDTO {
-    private String      userID;
-    private String[]    roles;
-    private String      accessToken;
-    private String      refreshToken;
+    private String userID;
+    private String[] roles;
+    private String accessToken;
+    private String refreshToken;
 
 
     public SessionDTO(Session session) {

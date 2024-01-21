@@ -1,6 +1,6 @@
 package com.rednet.authmanagementservice.entity;
 
-import com.rednet.authmanagementservice.config.EnumRoles;
+import com.rednet.authmanagementservice.config.RolesEnum;
 import java.util.Set;
 
 public class Account {
@@ -14,16 +14,14 @@ public class Account {
 
     private String secretWord;
 
-    private Set<EnumRoles> roles;
+    private Set<RolesEnum> roles;
 
-    public Account(
-            String ID,
-            String username,
-            String email,
-            String password,
-            String secretWord,
-            Set<EnumRoles> roles
-    ) {
+    public Account(String ID,
+                   String username,
+                   String email,
+                   String password,
+                   String secretWord,
+                   Set<RolesEnum> roles) {
         this.ID = ID;
         this.username = username;
         this.password = password;
@@ -72,11 +70,11 @@ public class Account {
         this.secretWord = secretWord;
     }
 
-    public Set<EnumRoles> getRoles() {
+    public Set<RolesEnum> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<EnumRoles> roles) {
+    public void setRoles(Set<RolesEnum> roles) {
         this.roles = roles;
     }
 

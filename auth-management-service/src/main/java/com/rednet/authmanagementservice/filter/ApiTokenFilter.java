@@ -1,12 +1,9 @@
 package com.rednet.authmanagementservice.filter;
 
-import com.rednet.authmanagementservice.util.JwtUtil;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.SignatureException;
+import com.rednet.authmanagementservice.config.RolesEnum;
+import com.rednet.authmanagementservice.exception.InvalidTokenException;
+import com.rednet.authmanagementservice.model.SystemTokenClaims;
+import com.rednet.authmanagementservice.util.TokenUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,70 +17,65 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class ApiTokenFilter extends OncePerRequestFilter {
     private final String apiTokenCookieName;
-    private final JwtParser apiTokenParser;
+    private final TokenUtil tokenUtil;
 
-    public ApiTokenFilter(
-        @Value("${rednet.app.security.api-token.cookie-name}") String apiTokenCookieName,
-        JwtUtil jwtUtil
-    ) {
+    public ApiTokenFilter(@Value("${rednet.app.security.api-token.cookie-name}") String apiTokenCookieName,
+                          TokenUtil tokenUtil) {
         this.apiTokenCookieName = apiTokenCookieName;
-        this.apiTokenParser = jwtUtil.getApiTokenParser();
+        this.tokenUtil = tokenUtil;
     }
 
     @Override
-    protected void doFilterInternal(
-        @Nonnull HttpServletRequest     request,
-        @Nonnull HttpServletResponse    response,
-        @Nonnull FilterChain            filterChain
-    ) throws ServletException, IOException {
-        Cookie[] cookies = request.getCookies();
+    protected void doFilterInternal(@Nonnull HttpServletRequest request,
+                                    @Nonnull HttpServletResponse response,
+                                    @Nonnull FilterChain filterChain) throws ServletException, IOException {
+        Optional<String> apiToken = extractApiTokenFromRequest(request);
 
-        if (cookies == null) {
-            filterChain.doFilter(request,response);
-            return;
-        }
-
-        Cookie apiTokenCookie = Arrays.stream(cookies)
-            .filter(cookie -> cookie.getName().equals(apiTokenCookieName))
-            .findFirst().orElse(null);
-
-        if (apiTokenCookie == null) {
+        if (apiToken.isEmpty()) {
             filterChain.doFilter(request,response);
             return;
         }
 
         try {
-            Claims claims = apiTokenParser.parseClaimsJws(apiTokenCookie.getValue()).getBody();
-            UsernamePasswordAuthenticationToken contextAuthToken =
-                new UsernamePasswordAuthenticationToken(
-                    claims.getSubject(),
-                    apiTokenCookie.getValue(),
-                    Arrays.stream((String[]) claims.get("roles"))
-                        .map(SimpleGrantedAuthority::new)
-                        .toList()
-                );
+            SystemTokenClaims claims = tokenUtil.parseApiToken(apiToken.get());
+            List<SimpleGrantedAuthority> authorities = convertRolesToAuthorities(claims.getRoles());
+
+            UsernamePasswordAuthenticationToken contextAuthToken = new UsernamePasswordAuthenticationToken(
+                    claims.getSubjectID(),
+                    apiToken.get(),
+                    authorities
+            );
 
             contextAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
             SecurityContextHolder.getContext().setAuthentication(contextAuthToken);
-        } catch (
-            SignatureException |
-            MalformedJwtException |
-            ExpiredJwtException |
-            UnsupportedJwtException |
-            IllegalArgumentException e
-        ) {
+        } catch (InvalidTokenException exception) {
             /*
             * LOG EVENT
              */
         }
 
         filterChain.doFilter(request,response);
+    }
+
+    private Optional<String> extractApiTokenFromRequest(HttpServletRequest request) {
+        Optional<Cookie> cookie = Optional.ofNullable(WebUtils.getCookie(request, apiTokenCookieName));
+        return cookie.map(Cookie::getValue);
+    }
+
+    private List<SimpleGrantedAuthority> convertRolesToAuthorities(List<RolesEnum> roles) {
+        return roles.stream()
+                .map(RolesEnum::name)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 }

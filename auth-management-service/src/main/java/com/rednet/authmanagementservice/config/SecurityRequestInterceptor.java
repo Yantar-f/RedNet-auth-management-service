@@ -2,7 +2,6 @@ package com.rednet.authmanagementservice.config;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpCookie;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -11,19 +10,25 @@ import static org.springframework.http.HttpHeaders.COOKIE;
 
 @Component
 public class SecurityRequestInterceptor implements RequestInterceptor {
-    private final String apiTokenCookieName;
+    private final ApiTokenConfig apiTokenConfig;
 
-    public SecurityRequestInterceptor(@Value("${rednet.app.security.api-token.cookie-name}") String apiTokenCookieName) {
-        this.apiTokenCookieName = apiTokenCookieName;
+    public SecurityRequestInterceptor(ApiTokenConfig apiTokenConfig) {
+        this.apiTokenConfig = apiTokenConfig;
     }
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
-        HttpCookie apiTokenCookie = new HttpCookie(
-            apiTokenCookieName,
-            (String) SecurityContextHolder.getContext().getAuthentication().getCredentials()
-        );
+        String apiToken = extractApiTokenFromContext();
+        String apiTokenCookie = createApiTokenCookie(apiTokenConfig, apiToken);
 
-        requestTemplate.header(COOKIE, apiTokenCookie.toString());
+        requestTemplate.header(COOKIE, apiTokenCookie);
+    }
+
+    private String createApiTokenCookie(ApiTokenConfig config, String token) {
+        return new HttpCookie(config.getCookieName(), token).toString();
+    }
+
+    private String extractApiTokenFromContext() {
+        return (String) SecurityContextHolder.getContext().getAuthentication().getCredentials();
     }
 }

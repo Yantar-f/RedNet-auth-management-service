@@ -11,14 +11,12 @@ public class Session {
     private String      refreshToken;
     private String      tokenID;
 
-    public Session(
-            String      userID,
-            String[]    roles,
-            Instant     createdAt,
-            String      accessToken,
-            String      refreshToken,
-            String      tokenID
-    ) {
+    public Session(String userID,
+                   String[] roles,
+                   Instant createdAt,
+                   String accessToken,
+                   String refreshToken,
+                   String tokenID) {
         this.userID = userID;
         this.roles = roles;
         this.createdAt = createdAt;

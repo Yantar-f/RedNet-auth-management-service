@@ -1,12 +1,12 @@
 package com.rednet.authmanagementservice.service;
 
 import com.rednet.authmanagementservice.entity.Registration;
-import com.rednet.authmanagementservice.model.RegistrationData;
+import com.rednet.authmanagementservice.model.RegistrationCreationData;
 
 import java.util.Optional;
 
 public interface RegistrationService {
-    Registration            createRegistration      (RegistrationData registrationData);
+    Registration            createRegistration      (RegistrationCreationData data);
     Optional<Registration>  findRegistrationByID    (String ID);
 
     void updateRegistration     (Registration registration);

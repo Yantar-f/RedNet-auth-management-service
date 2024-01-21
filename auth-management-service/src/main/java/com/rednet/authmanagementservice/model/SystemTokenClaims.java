@@ -1,6 +1,6 @@
 package com.rednet.authmanagementservice.model;
 
-import com.rednet.authmanagementservice.config.EnumRoles;
+import com.rednet.authmanagementservice.config.RolesEnum;
 
 import java.util.HashSet;
 import java.util.List;
@@ -9,14 +9,12 @@ public class SystemTokenClaims {
     String subjectID;
     String sessionID;
     String tokenID;
-    List<EnumRoles> roles;
+    List<RolesEnum> roles;
 
-    public SystemTokenClaims(
-            String subjectID,
-            String sessionID,
-            String tokenID,
-            List<EnumRoles> roles
-    ) {
+    public SystemTokenClaims(String subjectID,
+                             String sessionID,
+                             String tokenID,
+                             List<RolesEnum> roles) {
         this.subjectID = subjectID;
         this.sessionID = sessionID;
         this.tokenID = tokenID;
@@ -47,11 +45,11 @@ public class SystemTokenClaims {
         this.tokenID = tokenID;
     }
 
-    public List<EnumRoles> getRoles() {
+    public List<RolesEnum> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<EnumRoles> roles) {
+    public void setRoles(List<RolesEnum> roles) {
         this.roles = roles;
     }
 

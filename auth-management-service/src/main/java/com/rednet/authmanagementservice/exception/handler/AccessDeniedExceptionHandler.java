@@ -17,11 +17,9 @@ import java.util.ArrayList;
 @Component
 public class AccessDeniedExceptionHandler implements AccessDeniedHandler {
     @Override
-    public void handle(
-        HttpServletRequest      request,
-        HttpServletResponse     response,
-        AccessDeniedException   accessDeniedException
-    ) throws IOException, ServletException {
+    public void handle(HttpServletRequest request,
+                       HttpServletResponse response,
+                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
         HttpStatus status = HttpStatus.FORBIDDEN;
 
         response.setStatus(status.value());

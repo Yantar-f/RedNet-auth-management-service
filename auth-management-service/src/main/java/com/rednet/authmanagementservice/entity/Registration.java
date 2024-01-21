@@ -9,15 +9,13 @@ public class Registration {
     private String encodedPassword;
     private String encodedSecretWord;
 
-    public Registration(
-            String ID,
-            String activationCode,
-            String tokenID,
-            String username,
-            String email,
-            String encodedPassword,
-            String encodedSecretWord
-    ) {
+    public Registration(String ID,
+                        String activationCode,
+                        String tokenID,
+                        String username,
+                        String email,
+                        String encodedPassword,
+                        String encodedSecretWord) {
         this.ID = ID;
         this.activationCode = activationCode;
         this.tokenID = tokenID;

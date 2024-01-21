@@ -1,6 +1,6 @@
 package com.rednet.authmanagementservice.model;
 
-public record RegistrationData(
+public record RegistrationCreationData(
         String activationCode,
         String tokenID,
         String username,
@@ -13,7 +13,7 @@ public record RegistrationData(
         if (this == obj) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
 
-        RegistrationData data = (RegistrationData) obj;
+        RegistrationCreationData data = (RegistrationCreationData) obj;
 
         return  activationCode.equals(data.activationCode) &&
                 tokenID.equals(data.tokenID) &&

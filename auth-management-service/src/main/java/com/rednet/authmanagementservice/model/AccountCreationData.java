@@ -1,6 +1,6 @@
 package com.rednet.authmanagementservice.model;
 
-import com.rednet.authmanagementservice.config.EnumRoles;
+import com.rednet.authmanagementservice.config.RolesEnum;
 
 import java.util.Set;
 
@@ -9,7 +9,7 @@ public record AccountCreationData(
         String email,
         String password,
         String secretWord,
-        Set<EnumRoles> roles
+        Set<RolesEnum> roles
 ) {
     @Override
     public boolean equals(Object obj) {

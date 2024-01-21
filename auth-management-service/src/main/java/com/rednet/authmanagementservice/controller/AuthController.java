@@ -1,6 +1,9 @@
 package com.rednet.authmanagementservice.controller;
 
-import com.rednet.authmanagementservice.config.EnumTokenType;
+import com.rednet.authmanagementservice.config.AccessTokenConfig;
+import com.rednet.authmanagementservice.config.RefreshTokenConfig;
+import com.rednet.authmanagementservice.config.RegistrationTokenConfig;
+import com.rednet.authmanagementservice.config.TokenConfig;
 import com.rednet.authmanagementservice.dto.SessionDTO;
 import com.rednet.authmanagementservice.exception.MissingTokenException;
 import com.rednet.authmanagementservice.model.RegistrationCredentials;
@@ -13,15 +16,15 @@ import com.rednet.authmanagementservice.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.WebUtils;
 
-import java.util.Arrays;
+import java.util.Optional;
 
 import static org.springframework.http.HttpHeaders.SET_COOKIE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -29,56 +32,36 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping(produces = APPLICATION_JSON_VALUE)
 public class AuthController {
-    private final AuthService   authService;
-    private final String        accessTokenCookieName;
-    private final String        accessTokenCookiePath;
-    private final long          accessTokenCookieExpirationS;
-    private final String        registrationTokenCookiePath;
-    private final String        registrationTokenCookieName;
-    private final long          registrationTokenCookieExpirationS;
-    private final String        refreshTokenCookiePath;
-    private final String        refreshTokenCookieName;
-    private final long          refreshTokenCookieExpirationS;
+    private final AuthService authService;
+    private final AccessTokenConfig accessTokenConfig;
+    private final RegistrationTokenConfig registrationTokenConfig;
+    private final RefreshTokenConfig refreshTokenConfig;
 
-
-    public AuthController(
-        AuthService authService,
-        @Value("${rednet.app.security.access-token.cookie-name}") String        accessTokenCookieName,
-        @Value("${rednet.app.security.access-token.cookie-path}") String        accessTokenCookiePath,
-        @Value("${rednet.app.security.access-token.cookie-expiration-s}") long  accessTokenCookieExpirationS,
-        @Value("${rednet.app.registration-token.cookie-path}") String           registrationTokenCookiePath,
-        @Value("${rednet.app.registration-token.cookie-name}") String           registrationTokenCookieName,
-        @Value("${rednet.app.registration-token.cookie-expiration-s}") long     registrationTokenCookieExpirationS,
-        @Value("${rednet.app.security.refresh-token.cookie-path}") String       refreshTokenCookiePath,
-        @Value("${rednet.app.security.refresh-token.cookie-name}") String       refreshTokenCookieName,
-        @Value("${rednet.app.security.refresh-token.cookie-expiration-s}") long refreshTokenCookieExpirationS
-    ) {
+    public AuthController(AuthService authService,
+                          AccessTokenConfig accessTokenConfig,
+                          RegistrationTokenConfig registrationTokenConfig,
+                          RefreshTokenConfig refreshTokenConfig) {
         this.authService = authService;
-        this.accessTokenCookieName = accessTokenCookieName;
-        this.accessTokenCookiePath = accessTokenCookiePath;
-        this.accessTokenCookieExpirationS = accessTokenCookieExpirationS;
-        this.registrationTokenCookiePath = registrationTokenCookiePath;
-        this.registrationTokenCookieName = registrationTokenCookieName;
-        this.registrationTokenCookieExpirationS = registrationTokenCookieExpirationS;
-        this.refreshTokenCookiePath = refreshTokenCookiePath;
-        this.refreshTokenCookieName = refreshTokenCookieName;
-        this.refreshTokenCookieExpirationS = refreshTokenCookieExpirationS;
+        this.accessTokenConfig = accessTokenConfig;
+        this.registrationTokenConfig = registrationTokenConfig;
+        this.refreshTokenConfig = refreshTokenConfig;
     }
 
-    @PostMapping(
-            path = "/signup",
-            consumes = APPLICATION_JSON_VALUE)
+
+
+
+    @PostMapping(path = "/signup",
+                 consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<SignupResponseBody> signup(@RequestBody @Valid SignupRequestBody requestBody) {
-        RegistrationCredentials reg = authService.signup(requestBody);
+        RegistrationCredentials registrationCredentials = authService.signup(requestBody);
 
         return ResponseEntity.ok()
-                .header(SET_COOKIE, generateRegistrationCookie(reg.registrationToken()))
-                .body(new SignupResponseBody(reg.registrationID()));
+                .header(SET_COOKIE, generateRegistrationCookie(registrationCredentials.registrationToken()))
+                .body(new SignupResponseBody(registrationCredentials.registrationID()));
     }
 
-    @PostMapping(
-            path = "/signin",
-            consumes = APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/signin",
+                 consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<SigninResponseBody> signin(@RequestBody @Valid SigninRequestBody requestBody) {
         SessionDTO session = new SessionDTO(authService.signin(requestBody));
 
@@ -90,35 +73,20 @@ public class AuthController {
 
     @PostMapping(path = "/signout")
     public ResponseEntity<Void> signout(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
+        String refreshToken = extractRefreshTokenFromRequest(request);
 
-        if (cookies == null) throw new MissingTokenException(EnumTokenType.REFRESH_TOKEN);
-
-        Cookie refreshTokenCookie = Arrays.stream(cookies)
-                .filter(cookie -> cookie.getName().equals(refreshTokenCookieName))
-                .findFirst()
-                .orElseThrow(() -> new MissingTokenException(EnumTokenType.REFRESH_TOKEN));
-
-        authService.signout(refreshTokenCookie.getValue());
+        authService.signout(refreshToken);
 
         return ResponseEntity.ok()
-                .header(SET_COOKIE, generateCleaningCookie(accessTokenCookieName,accessTokenCookiePath))
-                .header(SET_COOKIE, generateCleaningCookie(refreshTokenCookieName,refreshTokenCookiePath))
+                .header(SET_COOKIE, generateCleaningTokenCookie(accessTokenConfig))
+                .header(SET_COOKIE, generateCleaningTokenCookie(refreshTokenConfig))
                 .build();
     }
 
     @PostMapping(path = "/refresh-tokens")
     public ResponseEntity<Void> refreshTokens(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies == null) throw new MissingTokenException(EnumTokenType.REFRESH_TOKEN);
-
-        Cookie refreshTokenCookie = Arrays.stream(cookies)
-            .filter(cookie -> cookie.getName().equals(refreshTokenCookieName))
-            .findFirst()
-            .orElseThrow(() -> new MissingTokenException(EnumTokenType.REFRESH_TOKEN));
-
-        SessionDTO session = new SessionDTO(authService.refreshTokens(refreshTokenCookie.getValue()));
+        String refreshToken = extractRefreshTokenFromRequest(request);
+        SessionDTO session = new SessionDTO(authService.refreshTokens(refreshToken));
 
         return ResponseEntity.ok()
             .header(SET_COOKIE, generateAccessTokenCookie(session.getAccessToken()))
@@ -126,14 +94,14 @@ public class AuthController {
             .build();
     }
 
-    @PostMapping(
-            path = "/verify-email",
-            consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<SigninResponseBody> verifyEmail(@RequestBody @Valid RegistrationVerificationData requestBody) {
+    @PostMapping(path = "/verify-email",
+                 consumes = APPLICATION_JSON_VALUE)
+    public ResponseEntity<SigninResponseBody> verifyEmail(
+            @RequestBody @Valid RegistrationVerificationData requestBody) {
         SessionDTO session = new SessionDTO(authService.verifyEmail(requestBody));
 
         return ResponseEntity.ok()
-            .header(SET_COOKIE, generateCleaningCookie(registrationTokenCookieName, refreshTokenCookiePath))
+            .header(SET_COOKIE, generateCleaningTokenCookie(registrationTokenConfig))
             .header(SET_COOKIE, generateAccessTokenCookie(session.getAccessToken()))
             .header(SET_COOKIE, generateRefreshTokenCookie(session.getRefreshToken()))
             .body(new SigninResponseBody(session.getUserID(), session.getRoles()));
@@ -141,20 +109,34 @@ public class AuthController {
 
     @PostMapping(path = "/resend-email-verification")
     public ResponseEntity<Void> resendEmailVerification(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies == null) throw new MissingTokenException(EnumTokenType.REGISTRATION_TOKEN);
-
-        Cookie registrationTokenCookie = Arrays.stream(cookies)
-            .filter(cookie -> cookie.getName().equals(registrationTokenCookieName))
-            .findFirst()
-            .orElseThrow(() -> new MissingTokenException(EnumTokenType.REGISTRATION_TOKEN));
-
-        String newRegistrationToken = authService.resendEmailVerification(registrationTokenCookie.getValue());
+        String oldRegistrationToken = extractRegistrationTokenFromRequest(request);
+        String newRegistrationToken = authService.resendEmailVerification(oldRegistrationToken);
 
         return ResponseEntity.ok()
             .header(SET_COOKIE, generateRegistrationCookie(newRegistrationToken))
             .build();
+    }
+
+
+
+
+    private String extractRegistrationTokenFromRequest(HttpServletRequest request) {
+        return extractTokenFromRequest(request, registrationTokenConfig);
+    }
+
+    private String extractRefreshTokenFromRequest(HttpServletRequest request) {
+        return extractTokenFromRequest(request, refreshTokenConfig);
+    }
+
+    private String extractTokenFromRequest(HttpServletRequest request, TokenConfig tokenConfig) {
+        return Optional
+                .ofNullable(WebUtils.getCookie(request, tokenConfig.getCookieName()))
+                .map(Cookie::getValue)
+                .orElseThrow(() -> new MissingTokenException(tokenConfig));
+    }
+
+    private String generateCleaningTokenCookie(TokenConfig config) {
+        return generateCleaningCookie(config.getCookieName(), config.getCookiePath());
     }
 
     private String generateCleaningCookie(String name, String path) {
@@ -166,27 +148,22 @@ public class AuthController {
     }
 
     private String generateRegistrationCookie(String token) {
-        return ResponseCookie.from(registrationTokenCookieName, token)
-                .path(registrationTokenCookiePath)
-                .maxAge(registrationTokenCookieExpirationS)
-                .httpOnly(true)
-                .build()
-                .toString();
+        return createTokenCookie(token, registrationTokenConfig);
     }
 
     private String generateAccessTokenCookie(String token) {
-        return ResponseCookie.from(accessTokenCookieName, token)
-                .path(accessTokenCookiePath)
-                .maxAge(accessTokenCookieExpirationS)
-                .httpOnly(true)
-                .build()
-                .toString();
+        return createTokenCookie(token, accessTokenConfig);
     }
 
     private String generateRefreshTokenCookie(String token) {
-        return ResponseCookie.from(refreshTokenCookieName, token)
-                .path(refreshTokenCookiePath)
-                .maxAge(refreshTokenCookieExpirationS)
+        return createTokenCookie(token, refreshTokenConfig);
+    }
+
+    private String createTokenCookie(String token, TokenConfig config) {
+        return ResponseCookie.from(config.getCookieName())
+                .value(token)
+                .path(config.getCookiePath())
+                .maxAge(config.getCookieExpirationS())
                 .httpOnly(true)
                 .build()
                 .toString();

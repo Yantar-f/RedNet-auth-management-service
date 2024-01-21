@@ -17,11 +17,9 @@ import java.util.ArrayList;
 @Component
 public class AuthenticationExceptionHandler implements AuthenticationEntryPoint {
     @Override
-    public void commence(
-        HttpServletRequest      request,
-        HttpServletResponse     response,
-        AuthenticationException authException
-    ) throws IOException, ServletException {
+    public void commence(HttpServletRequest request,
+                         HttpServletResponse response,
+                         AuthenticationException authException) throws IOException, ServletException {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
 
         response.setStatus(status.value());

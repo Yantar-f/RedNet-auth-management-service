@@ -23,36 +23,44 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Account createAccount(AccountCreationData creationData) {
-        Account account = serviceClient.createAccount(creationData).getBody();
-
         try {
+            Account account = serviceClient.createAccount(creationData).getBody();
+
             return Optional
                     .ofNullable(account)
-                    .orElseThrow(() -> new ServerErrorException("Error finding account"));
+                    .orElseThrow(() -> new ServerErrorException("Error during creating account"));
         } catch (FeignException.Conflict exception) {
             throw new OccupiedValueException("Some unique fields are already occupied");
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during creating account");
         }
     }
 
     @Override
     public Optional<Account> findAccountByUsernameOrEmail(String username, String email) {
-        Account account = serviceClient.getAccountByUsernameOrEmail(username, email).getBody();
-
         try {
+            Account account = serviceClient.getAccountByUsernameOrEmail(username, email).getBody();
+
             return Optional.of(Optional
                     .ofNullable(account)
-                    .orElseThrow(() -> new ServerErrorException("Error finding account")));
+                    .orElseThrow(() -> new ServerErrorException("Error during finding account")));
         } catch (FeignException.NotFound exception) {
             return Optional.empty();
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during finding account");
         }
     }
 
     @Override
-    public AccountUniqueFieldsOccupancy checkAccountUniqueFieldsOccupancy(AccountUniqueFields fields) {
-        var occupancy = serviceClient.getAccountUniqueFieldsOccupancy(fields.username(), fields.email()).getBody();
+    public AccountUniqueFieldsOccupancy getAccountUniqueFieldsOccupancy(AccountUniqueFields fields) {
+        try {
+            var occupancy = serviceClient.getAccountUniqueFieldsOccupancy(fields.username(), fields.email()).getBody();
 
-        return Optional
-                .ofNullable(occupancy)
-                .orElseThrow(() -> new ServerErrorException("Error finding account"));
+            return Optional
+                    .ofNullable(occupancy)
+                    .orElseThrow(() -> new ServerErrorException("Error during getting account unique fields occupancy"));
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during getting account unique fields occupancy");
+        }
     }
 }

@@ -5,7 +5,6 @@ import com.rednet.authmanagementservice.model.SystemTokenClaims;
 
 public interface TokenUtil {
     String generateRegistrationToken(RegistrationTokenClaims claims);
-
-    RegistrationTokenClaims parseRegistrationToken  (String token);
-    SystemTokenClaims       parseApiToken           (String token);
+    RegistrationTokenClaims parseRegistrationToken(String token);
+    SystemTokenClaims parseApiToken(String token);
 }

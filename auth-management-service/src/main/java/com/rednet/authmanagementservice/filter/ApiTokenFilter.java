@@ -1,5 +1,6 @@
 package com.rednet.authmanagementservice.filter;
 
+import com.rednet.authmanagementservice.config.ApiTokenConfig;
 import com.rednet.authmanagementservice.config.RolesEnum;
 import com.rednet.authmanagementservice.exception.InvalidTokenException;
 import com.rednet.authmanagementservice.model.SystemTokenClaims;
@@ -25,12 +26,12 @@ import java.util.Optional;
 
 @Component
 public class ApiTokenFilter extends OncePerRequestFilter {
-    private final String apiTokenCookieName;
+    private final ApiTokenConfig apiTokenConfig ;
     private final TokenUtil tokenUtil;
 
-    public ApiTokenFilter(@Value("${rednet.app.security.api-token.cookie-name}") String apiTokenCookieName,
+    public ApiTokenFilter(ApiTokenConfig apiTokenConfig,
                           TokenUtil tokenUtil) {
-        this.apiTokenCookieName = apiTokenCookieName;
+        this.apiTokenConfig = apiTokenConfig;
         this.tokenUtil = tokenUtil;
     }
 
@@ -68,7 +69,7 @@ public class ApiTokenFilter extends OncePerRequestFilter {
     }
 
     private Optional<String> extractApiTokenFromRequest(HttpServletRequest request) {
-        Optional<Cookie> cookie = Optional.ofNullable(WebUtils.getCookie(request, apiTokenCookieName));
+        Optional<Cookie> cookie = Optional.ofNullable(WebUtils.getCookie(request, apiTokenConfig.getCookieName()));
         return cookie.map(Cookie::getValue);
     }
 

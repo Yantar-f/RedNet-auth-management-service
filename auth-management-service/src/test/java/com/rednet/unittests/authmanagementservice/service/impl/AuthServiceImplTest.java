@@ -1,4 +1,4 @@
-package com.rednet.authmanagementservice.service.impl;
+package com.rednet.unittests.authmanagementservice.service.impl;
 
 import com.rednet.authmanagementservice.config.RolesEnum;
 import com.rednet.authmanagementservice.entity.Account;
@@ -11,8 +11,8 @@ import com.rednet.authmanagementservice.exception.OccupiedValueException;
 import com.rednet.authmanagementservice.model.AccountCreationData;
 import com.rednet.authmanagementservice.model.AccountUniqueFields;
 import com.rednet.authmanagementservice.model.AccountUniqueFieldsOccupancy;
-import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationCreationData;
+import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationTokenClaims;
 import com.rednet.authmanagementservice.model.RegistrationVerificationData;
 import com.rednet.authmanagementservice.model.SessionCreationData;
@@ -22,6 +22,7 @@ import com.rednet.authmanagementservice.service.AccountService;
 import com.rednet.authmanagementservice.service.EmailService;
 import com.rednet.authmanagementservice.service.RegistrationService;
 import com.rednet.authmanagementservice.service.SessionService;
+import com.rednet.authmanagementservice.service.impl.AuthServiceImpl;
 import com.rednet.authmanagementservice.util.ActivationCodeGenerator;
 import com.rednet.authmanagementservice.util.TokenIDGenerator;
 import com.rednet.authmanagementservice.util.TokenUtil;
@@ -38,7 +39,8 @@ import java.util.stream.Collectors;
 
 import static org.instancio.Instancio.create;
 import static org.instancio.Instancio.ofSet;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -69,7 +71,7 @@ class AuthServiceImplTest {
     );
 
     @Test
-    public void Registration_with_unique_username_and_email_is_successful() {
+    public void Registration_is_successful() {
         String expectedUsername = create(String.class);
         String expectedEmail = create(String.class);
         String expectedPassword = create(String.class);
@@ -128,7 +130,9 @@ class AuthServiceImplTest {
                 expectedEmailOccupancy
         );
 
-        when(accountService.checkAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
+
+
+        when(accountService.getAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
                 .thenReturn(expectedOccupancy);
 
         when(passwordEncoder.encode(eq(expectedPassword)))
@@ -149,7 +153,7 @@ class AuthServiceImplTest {
         when(registrationService.createRegistration(eq(expectedRegistrationCreationData)))
                 .thenReturn(expectedRegistration);
 
-        RegistrationCredentials actualCredentials = sut.signup(request);
+        RegistrationCredentials actualCredentials = sut.register(request);
 
         assertEquals(expectedCredentials, actualCredentials);
 
@@ -185,10 +189,10 @@ class AuthServiceImplTest {
                 expectedEmailOccupancy
         );
 
-        when(accountService.checkAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
+        when(accountService.getAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
                 .thenReturn(expectedOccupancy);
 
-        assertThrows(OccupiedValueException.class, () -> sut.signup(request));
+        assertThrows(OccupiedValueException.class, () -> sut.register(request));
 
         verify(registrationService, never())
                 .createRegistration(any());
@@ -222,10 +226,10 @@ class AuthServiceImplTest {
                 expectedEmailOccupancy
         );
 
-        when(accountService.checkAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
+        when(accountService.getAccountUniqueFieldsOccupancy(eq(expectedUniqueFields)))
                 .thenReturn(expectedOccupancy);
 
-        assertThrows(OccupiedValueException.class, () -> sut.signup(request));
+        assertThrows(OccupiedValueException.class, () -> sut.register(request));
 
         verify(registrationService, never())
                 .createRegistration(any());
@@ -577,7 +581,7 @@ class AuthServiceImplTest {
         when(sessionService.createSession(eq(expectedSessionCreationData)))
                 .thenReturn(expectedSession);
 
-        Session actualSession = sut.signin(request);
+        Session actualSession = sut.login(request);
 
         assertEquals(expectedSession, actualSession);
 
@@ -596,7 +600,7 @@ class AuthServiceImplTest {
                         eq(expectedInvalidUserIdentifier)))
                 .thenReturn(Optional.empty());
 
-        assertThrows(InvalidAccountDataException.class, () -> sut.signin(request));
+        assertThrows(InvalidAccountDataException.class, () -> sut.login(request));
 
         verify(sessionService, never())
                 .createSession(any());
@@ -630,7 +634,7 @@ class AuthServiceImplTest {
         when(passwordEncoder.matches(eq(expectedRequestedPassword), eq(expectedEncodedPassword)))
                 .thenReturn(false);
 
-        assertThrows(InvalidAccountDataException.class, () -> sut.signin(request));
+        assertThrows(InvalidAccountDataException.class, () -> sut.login(request));
 
         verify(sessionService, never())
                 .createSession(any());
@@ -640,7 +644,7 @@ class AuthServiceImplTest {
     public void Logout_with_valid_refresh_token_is_successful() {
         String expectedRefreshToken = create(String.class);
 
-        sut.signout(expectedRefreshToken);
+        sut.logout(expectedRefreshToken);
 
         verify(sessionService)
                 .deleteSession(eq(expectedRefreshToken));
@@ -653,7 +657,7 @@ class AuthServiceImplTest {
         doThrow(InvalidTokenException.class)
                 .when(sessionService).deleteSession(eq(expectedInvalidRefreshToken));
 
-        assertThrows(InvalidTokenException.class, () -> sut.signout(expectedInvalidRefreshToken));
+        assertThrows(InvalidTokenException.class, () -> sut.logout(expectedInvalidRefreshToken));
 
         verify(sessionService)
                 .deleteSession(eq(expectedInvalidRefreshToken));
@@ -681,7 +685,7 @@ class AuthServiceImplTest {
         when(sessionService.refreshSession(eq(expectedRefreshToken)))
                 .thenReturn(expectedUpdatedSession);
 
-        Session actualUpdatedSession = sut.refreshTokens(expectedRefreshToken);
+        Session actualUpdatedSession = sut.refreshSession(expectedRefreshToken);
 
         assertEquals(expectedUpdatedSession, actualUpdatedSession);
 
@@ -696,7 +700,7 @@ class AuthServiceImplTest {
         when(sessionService.refreshSession(eq(expectedInvalidRefreshToken)))
                 .thenThrow(InvalidTokenException.class);
 
-        assertThrows(InvalidTokenException.class, () -> sut.refreshTokens(expectedInvalidRefreshToken));
+        assertThrows(InvalidTokenException.class, () -> sut.refreshSession(expectedInvalidRefreshToken));
 
         verify(sessionService)
                 .refreshSession(eq(expectedInvalidRefreshToken));

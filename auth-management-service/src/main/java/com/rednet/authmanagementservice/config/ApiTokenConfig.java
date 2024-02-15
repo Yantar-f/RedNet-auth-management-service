@@ -12,8 +12,18 @@ public class ApiTokenConfig extends TokenConfig {
             @Value("${rednet.app.security.api-token.allowed-clock-skew-s}") long allowedClockSkew,
             @Value("${rednet.app.security.api-token.cookie-name}") String cookieName,
             @Value("${rednet.app.security.api-token.cookie-path}") String cookiePath,
-            @Value("${rednet.app.security.api-token.cookie-expiration-s}") long cookieExpirationS) {
-        super(issuer, activationMs, expirationMs, allowedClockSkew, cookieName, cookiePath, cookieExpirationS);
+            @Value("${rednet.app.security.api-token.cookie-expiration-s}") long cookieExpirationS,
+            @Value("${rednet.app.security.api-token.secret-key}") String secretKey) {
+        super(
+                issuer,
+                activationMs,
+                expirationMs,
+                allowedClockSkew,
+                cookieName,
+                cookiePath,
+                cookieExpirationS,
+                secretKey
+        );
     }
 
     @Override

@@ -53,7 +53,7 @@ public class AuthController {
     @PostMapping(path = "/signup",
                  consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<SignupResponseBody> signup(@RequestBody @Valid SignupRequestBody requestBody) {
-        RegistrationCredentials registrationCredentials = authService.signup(requestBody);
+        RegistrationCredentials registrationCredentials = authService.register(requestBody);
 
         return ResponseEntity.ok()
                 .header(SET_COOKIE, generateRegistrationCookie(registrationCredentials.registrationToken()))
@@ -63,7 +63,7 @@ public class AuthController {
     @PostMapping(path = "/signin",
                  consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<SigninResponseBody> signin(@RequestBody @Valid SigninRequestBody requestBody) {
-        SessionDTO session = new SessionDTO(authService.signin(requestBody));
+        SessionDTO session = new SessionDTO(authService.login(requestBody));
 
         return ResponseEntity.ok()
                 .header(SET_COOKIE, generateAccessTokenCookie(session.getAccessToken()))
@@ -75,7 +75,7 @@ public class AuthController {
     public ResponseEntity<Void> signout(HttpServletRequest request) {
         String refreshToken = extractRefreshTokenFromRequest(request);
 
-        authService.signout(refreshToken);
+        authService.logout(refreshToken);
 
         return ResponseEntity.ok()
                 .header(SET_COOKIE, generateCleaningTokenCookie(accessTokenConfig))
@@ -86,7 +86,7 @@ public class AuthController {
     @PostMapping(path = "/refresh-tokens")
     public ResponseEntity<Void> refreshTokens(HttpServletRequest request) {
         String refreshToken = extractRefreshTokenFromRequest(request);
-        SessionDTO session = new SessionDTO(authService.refreshTokens(refreshToken));
+        SessionDTO session = new SessionDTO(authService.refreshSession(refreshToken));
 
         return ResponseEntity.ok()
             .header(SET_COOKIE, generateAccessTokenCookie(session.getAccessToken()))

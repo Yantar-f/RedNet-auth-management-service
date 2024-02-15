@@ -21,11 +21,15 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public Registration createRegistration(RegistrationCreationData data) {
-        Registration registration = serviceClient.createRegistration(data).getBody();
+        try {
+            Registration registration = serviceClient.createRegistration(data).getBody();
 
-        return Optional
-                .ofNullable(registration)
-                .orElseThrow(() -> new ServerErrorException("Error during creating registration"));
+            return Optional
+                    .ofNullable(registration)
+                    .orElseThrow(() -> new ServerErrorException("Error during creating registration"));
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during creating registration");
+        }
     }
 
     @Override
@@ -36,8 +40,10 @@ public class RegistrationServiceImpl implements RegistrationService {
             return Optional.of(Optional
                     .ofNullable(registration)
                     .orElseThrow(() -> new ServerErrorException("Error during getting registration " + ID)));
-        } catch (FeignException.NotFound e) {
+        } catch (FeignException.NotFound exception) {
             return Optional.empty();
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during getting registration");
         }
     }
 
@@ -45,8 +51,10 @@ public class RegistrationServiceImpl implements RegistrationService {
     public void updateRegistration(Registration registration) {
         try {
             serviceClient.updateRegistration(registration);
-        } catch (FeignException.NotFound e) {
+        } catch (FeignException.NotFound exception) {
             throw new RegistrationNotFoundException(registration.getID());
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during updating registration");
         }
     }
 
@@ -54,8 +62,10 @@ public class RegistrationServiceImpl implements RegistrationService {
     public void deleteRegistrationByID(String ID) {
         try {
             serviceClient.deleteRegistrationByID(ID);
-        } catch (FeignException.NotFound e) {
+        } catch (FeignException.NotFound exception) {
             throw new RegistrationNotFoundException(ID);
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during deleting registration");
         }
     }
 }

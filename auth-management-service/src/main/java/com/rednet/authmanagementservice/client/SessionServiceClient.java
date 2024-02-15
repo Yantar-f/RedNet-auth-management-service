@@ -16,15 +16,12 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
              path = "/sessions",
              fallbackFactory = SessionServiceClientFallbackFactory.class)
 public interface SessionServiceClient {
-    @PostMapping(consumes = APPLICATION_JSON_VALUE,
-                 produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Session> createSession   (@RequestBody SessionCreationData requestBody);
+    @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    ResponseEntity<Session> createSession(@RequestBody SessionCreationData requestBody);
 
-    @PutMapping(consumes = APPLICATION_JSON_VALUE,
-                produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Session> refreshSession  (@RequestBody RefreshSessionRequestBody requestBody);
+    @PutMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    ResponseEntity<Session> refreshSession(@RequestBody RefreshSessionRequestBody requestBody);
 
-    @PostMapping(path = "/session-removing-process",
-                 consumes = APPLICATION_JSON_VALUE)
-    ResponseEntity<Void>    deleteSession   (@RequestBody RefreshSessionRequestBody requestBody);
+    @PostMapping(path = "/session-removing-process", consumes = APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> deleteSession(@RequestBody RefreshSessionRequestBody requestBody);
 }

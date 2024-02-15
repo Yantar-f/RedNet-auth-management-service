@@ -11,8 +11,8 @@ import com.rednet.authmanagementservice.exception.OccupiedValueException;
 import com.rednet.authmanagementservice.model.AccountCreationData;
 import com.rednet.authmanagementservice.model.AccountUniqueFields;
 import com.rednet.authmanagementservice.model.AccountUniqueFieldsOccupancy;
-import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationCreationData;
+import com.rednet.authmanagementservice.model.RegistrationCredentials;
 import com.rednet.authmanagementservice.model.RegistrationTokenClaims;
 import com.rednet.authmanagementservice.model.RegistrationVerificationData;
 import com.rednet.authmanagementservice.model.SessionCreationData;
@@ -51,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
                            TokenIDGenerator tokenIDGenerator,
                            PasswordEncoder passwordEncoder,
                            TokenUtil tokenUtil) {
+
         this.accountService = accountService;
         this.registrationService = registrationService;
         this.sessionService = sessionService;
@@ -62,21 +63,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public RegistrationCredentials signup(SignupRequestBody request) {
+    public RegistrationCredentials register(SignupRequestBody request) {
         AccountUniqueFields fields = new AccountUniqueFields(request.username(), request.email());
-        AccountUniqueFieldsOccupancy occupancy = accountService.checkAccountUniqueFieldsOccupancy(fields);
 
-        if (occupancy.isAnyOccupied()) {
-            HashMap<String, String> occupiedFields = new HashMap<>();
-
-            if (occupancy.isUsernameOccupied())
-                occupiedFields.put("username", occupancy.username());
-
-            if (occupancy.isEmailOccupied())
-                occupiedFields.put("email", occupancy.email());
-
-            throw new OccupiedValueException(occupiedFields);
-        }
+        checkAccountUniqueFieldsOccupancy(fields);
 
         String activationCode = activationCodeGenerator.generate();
         String encodedPassword = passwordEncoder.encode(request.password());
@@ -101,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Session signin(SigninRequestBody request) {
+    public Session login(SigninRequestBody request) {
         Account account = accountService
                 .findAccountByUsernameOrEmail(request.userIdentifier(), request.userIdentifier())
                 .orElseThrow(InvalidAccountDataException::new);
@@ -113,12 +103,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void signout(String refreshToken) {
+    public void logout(String refreshToken) {
         sessionService.deleteSession(refreshToken);
     }
 
     @Override
-    public Session refreshTokens(String refreshToken) {
+    public Session refreshSession(String refreshToken) {
         return sessionService.refreshSession(refreshToken);
     }
 
@@ -164,16 +154,30 @@ public class AuthServiceImpl implements AuthService {
 
             registration.setActivationCode(newActivationCode);
             registration.setTokenID(newTokenID);
-
             tokenClaims.setTokenID(newTokenID);
 
             registrationService.updateRegistration(registration);
-
             emailService.sendRegistrationActivationMessage(registration.getEmail(), newActivationCode);
 
             return tokenUtil.generateRegistrationToken(tokenClaims);
         } catch (InvalidTokenException exception) {
             throw new InvalidRegistrationDataException();
+        }
+    }
+
+    private void checkAccountUniqueFieldsOccupancy(AccountUniqueFields fields) {
+        AccountUniqueFieldsOccupancy occupancy = accountService.getAccountUniqueFieldsOccupancy(fields);
+
+        if (occupancy.isAnyOccupied()) {
+            HashMap<String, String> occupiedFields = new HashMap<>();
+
+            if (occupancy.isUsernameOccupied())
+                occupiedFields.put("username", occupancy.username());
+
+            if (occupancy.isEmailOccupied())
+                occupiedFields.put("email", occupancy.email());
+
+            throw new OccupiedValueException(occupiedFields);
         }
     }
 

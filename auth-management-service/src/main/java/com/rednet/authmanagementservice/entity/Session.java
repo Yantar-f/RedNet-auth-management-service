@@ -4,12 +4,12 @@ import java.time.Instant;
 import java.util.Arrays;
 
 public class Session {
-    private String      userID;
-    private String[]    roles;
-    private Instant     createdAt;
-    private String      accessToken;
-    private String      refreshToken;
-    private String      tokenID;
+    private String userID;
+    private String[] roles;
+    private Instant createdAt;
+    private String accessToken;
+    private String refreshToken;
+    private String tokenID;
 
     public Session(String userID,
                    String[] roles,

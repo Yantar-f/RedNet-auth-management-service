@@ -13,17 +13,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
              path = "/registrations",
              fallbackFactory = RegistrationServiceClientFallbackFactory.class)
 public interface RegistrationServiceClient {
-    @PostMapping(consumes = APPLICATION_JSON_VALUE,
-                 produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Registration> createRegistration     (@RequestBody RegistrationCreationData data);
+    @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    ResponseEntity<Registration> createRegistration(@RequestBody RegistrationCreationData data);
 
-    @GetMapping(path = "/by-id",
-                produces = APPLICATION_JSON_VALUE)
-    ResponseEntity<Registration> getRegistrationByID    (@RequestParam("id") String ID);
+    @GetMapping(path = "/by-id", produces = APPLICATION_JSON_VALUE)
+    ResponseEntity<Registration> getRegistrationByID(@RequestParam("id") String ID);
 
     @PutMapping(consumes = APPLICATION_JSON_VALUE)
-    ResponseEntity<Void> updateRegistration     (@RequestBody Registration registration);
+    ResponseEntity<Void> updateRegistration(@RequestBody Registration registration);
 
     @DeleteMapping("/by-id")
-    ResponseEntity<Void> deleteRegistrationByID (@RequestParam("id") String ID);
+    ResponseEntity<Void> deleteRegistrationByID(@RequestParam("id") String ID);
 }

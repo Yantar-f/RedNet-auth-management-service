@@ -5,15 +5,10 @@ import java.util.Set;
 
 public class Account {
     private String ID;
-
     private String username;
-
     private String email;
-
     private String password;
-
     private String secretWord;
-
     private Set<RolesEnum> roles;
 
     public Account(String ID,

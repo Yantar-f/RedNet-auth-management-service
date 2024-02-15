@@ -13,10 +13,6 @@ spring:
             uri: http://localhost:8888
     config:
         import: 'configserver:'
-    data:
-        redis:
-            port: 6379
-            host: localhost
     mail:
         host: ${rednet.app.smtp.host}
         port: ${rednet.app.smtp.port}

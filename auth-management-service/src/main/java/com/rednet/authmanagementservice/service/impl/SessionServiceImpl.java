@@ -26,24 +26,29 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session createSession(SessionCreationData creationData) {
-        Session session = serviceClient
-                .createSession(new SessionCreationData(creationData.userID(), creationData.roles()))
-                .getBody();
+        try {
+            Session session = serviceClient.createSession(creationData).getBody();
 
-        return Optional
-                .ofNullable(session)
-                .orElseThrow(() -> new ServerErrorException("Error during creating session"));
+            return Optional
+                    .ofNullable(session)
+                    .orElseThrow(() -> new ServerErrorException("Error during creating session"));
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during updating session");
+        }
     }
 
     @Override
     public Session refreshSession(String refreshToken) {
         try {
             Session session = serviceClient.refreshSession(new RefreshSessionRequestBody(refreshToken)).getBody();
+
             return Optional
                     .ofNullable(session)
                     .orElseThrow(() -> new ServerErrorException("Error during updating session"));
         } catch (FeignException.BadRequest exception) {
             throw new InvalidTokenException(refreshTokenConfig);
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during updating session");
         }
     }
 
@@ -53,6 +58,8 @@ public class SessionServiceImpl implements SessionService {
             serviceClient.deleteSession(new RefreshSessionRequestBody(refreshToken));
         } catch (FeignException.BadRequest exception) {
             throw new InvalidTokenException(refreshTokenConfig);
+        } catch (FeignException exception) {
+            throw new ServerErrorException("Error during updating session");
         }
     }
 }

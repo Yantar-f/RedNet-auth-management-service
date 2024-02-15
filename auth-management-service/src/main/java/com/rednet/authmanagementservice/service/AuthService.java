@@ -7,11 +7,12 @@ import com.rednet.authmanagementservice.payload.request.SigninRequestBody;
 import com.rednet.authmanagementservice.payload.request.SignupRequestBody;
 
 public interface AuthService {
-    RegistrationCredentials signup          (SignupRequestBody requestMessage);
-    Session                 signin          (SigninRequestBody requestMessage);
-    void                    signout         (String refreshToken);
-    Session                 refreshTokens   (String refreshToken);
+    RegistrationCredentials register(SignupRequestBody requestMessage);
 
-    String      resendEmailVerification (String registrationToken);
-    Session     verifyEmail             (RegistrationVerificationData registrationVerificationData);
+    Session login           (SigninRequestBody requestMessage);
+    void    logout          (String refreshToken);
+    Session refreshSession  (String refreshToken);
+
+    String  resendEmailVerification (String registrationToken);
+    Session verifyEmail             (RegistrationVerificationData registrationVerificationData);
 }

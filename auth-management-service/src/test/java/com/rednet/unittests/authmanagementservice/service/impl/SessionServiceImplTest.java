@@ -1,20 +1,24 @@
-package com.rednet.authmanagementservice.service.impl;
+package com.rednet.unittests.authmanagementservice.service.impl;
 
 import com.rednet.authmanagementservice.client.SessionServiceClient;
 import com.rednet.authmanagementservice.config.RefreshTokenConfig;
 import com.rednet.authmanagementservice.config.RolesEnum;
 import com.rednet.authmanagementservice.entity.Session;
 import com.rednet.authmanagementservice.exception.InvalidTokenException;
+import com.rednet.authmanagementservice.exception.ServerErrorException;
 import com.rednet.authmanagementservice.model.SessionCreationData;
 import com.rednet.authmanagementservice.payload.request.RefreshSessionRequestBody;
 import com.rednet.authmanagementservice.service.SessionService;
+import com.rednet.authmanagementservice.service.impl.SessionServiceImpl;
 import feign.FeignException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.instancio.Instancio.create;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,8 +34,29 @@ class SessionServiceImplTest {
     private final RefreshTokenConfig refreshTokenConfig = mock(RefreshTokenConfig.class);
     private final SessionService sut = new SessionServiceImpl(sessionServiceClient, refreshTokenConfig);
 
+    private static final List<Class<? extends FeignException>> clientExceptions = List.of(
+            FeignException.FeignClientException.class,
+            FeignException.FeignServerException.class,
+            FeignException.BadRequest.class,
+            FeignException.NotFound.class,
+            FeignException.BadGateway.class,
+            FeignException.Conflict.class,
+            FeignException.Gone.class,
+            FeignException.InternalServerError.class,
+            FeignException.MethodNotAllowed.class,
+            FeignException.NotAcceptable.class,
+            FeignException.Forbidden.class,
+            FeignException.GatewayTimeout.class,
+            FeignException.NotImplemented.class,
+            FeignException.ServiceUnavailable.class,
+            FeignException.TooManyRequests.class,
+            FeignException.Unauthorized.class,
+            FeignException.UnprocessableEntity.class,
+            FeignException.UnsupportedMediaType.class
+    );
+
     @Test
-    public void Creating_session_is_always_successful() {
+    public void Creating_session_is_successful() {
         String expectedUserID = create(String.class);
         RolesEnum[] expectedRoles = create(RolesEnum[].class);
         String[] expectedRolesNames =  Arrays.stream(expectedRoles).map(Enum::name).toArray(String[]::new);
@@ -61,6 +86,22 @@ class SessionServiceImplTest {
 
         verify(sessionServiceClient)
                 .createSession(eq(expectedCreationData));
+    }
+
+    @ParameterizedTest
+    @MethodSource("creatingSessionUnexpectedExceptions")
+    public void Creating_session_with_unexpected_error_is_not_successful(
+            Class<? extends FeignException> exceptionClass) {
+        SessionCreationData expectedCreationData = create(SessionCreationData.class);
+
+        when(sessionServiceClient.createSession(eq(expectedCreationData)))
+                .thenThrow(exceptionClass);
+
+        assertThrows(ServerErrorException.class, () -> sut.createSession(expectedCreationData));
+    }
+
+    private static List<Class<? extends FeignException>> creatingSessionUnexpectedExceptions() {
+        return clientExceptions();
     }
 
     @Test
@@ -108,6 +149,24 @@ class SessionServiceImplTest {
         assertThrows(InvalidTokenException.class, () -> sut.refreshSession(expectedInvalidRefreshToken));
     }
 
+    @ParameterizedTest
+    @MethodSource("refreshingSessionUnexpectedExceptions")
+    public void Refreshing_session_with_unexpected_exception_is_not_succesful(
+            Class<? extends FeignException> exceptionClass) {
+        RefreshSessionRequestBody expectedRequestBody = create(RefreshSessionRequestBody.class);
+
+        when(sessionServiceClient.refreshSession(eq(expectedRequestBody)))
+                .thenThrow(exceptionClass);
+
+        assertThrows(ServerErrorException.class, () -> sut.refreshSession(expectedRequestBody.refreshToken()));
+    }
+
+    private static List<Class<? extends FeignException>> refreshingSessionUnexpectedExceptions() {
+        return clientExceptions().stream()
+                .filter(aClass -> ! aClass.equals(FeignException.BadRequest.class))
+                .toList();
+    }
+
     @Test
     public void Deleting_session_with_valid_refresh_token_is_successful() {
         String expectedRefreshToken = create(String.class);
@@ -128,5 +187,27 @@ class SessionServiceImplTest {
             .when(sessionServiceClient).deleteSession(eq(expectedRequestBody));
 
         assertThrows(InvalidTokenException.class, () -> sut.deleteSession(expectedInvalidRefreshToken));
+    }
+
+    @ParameterizedTest
+    @MethodSource("deletingSessionUnexpectedExceptions")
+    public void Deleting_session_with_unexpected_exception_is_not_succesful(
+            Class<? extends FeignException> exceptionClass) {
+        RefreshSessionRequestBody expectedRequestBody = create(RefreshSessionRequestBody.class);
+
+        when(sessionServiceClient.deleteSession(eq(expectedRequestBody)))
+                .thenThrow(exceptionClass);
+
+        assertThrows(ServerErrorException.class, () -> sut.deleteSession(expectedRequestBody.refreshToken()));
+    }
+
+    private static List<Class<? extends FeignException>> deletingSessionUnexpectedExceptions() {
+        return clientExceptions().stream()
+                .filter(aClass -> ! aClass.equals(FeignException.BadRequest.class))
+                .toList();
+    }
+
+    private static List<Class<? extends FeignException>> clientExceptions() {
+        return clientExceptions;
     }
 }

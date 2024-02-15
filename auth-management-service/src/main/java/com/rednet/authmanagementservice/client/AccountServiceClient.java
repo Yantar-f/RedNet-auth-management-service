@@ -16,16 +16,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
              path = "/accounts",
              fallbackFactory = AccountServiceClientFallbackFactory.class)
 public interface AccountServiceClient {
-    @PostMapping(consumes = APPLICATION_JSON_VALUE,
-                 produces = APPLICATION_JSON_VALUE)
+    @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     ResponseEntity<Account> createAccount(AccountCreationData data);
 
-    @GetMapping(path = "/by-username-or-email",
-                produces = APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/by-username-or-email", produces = APPLICATION_JSON_VALUE)
     ResponseEntity<Account> getAccountByUsernameOrEmail(String username, String email);
 
-    @GetMapping(path = "unique-fields-occupancy",
-                produces = APPLICATION_JSON_VALUE)
+    @GetMapping(path = "unique-fields-occupancy", produces = APPLICATION_JSON_VALUE)
     ResponseEntity<AccountUniqueFieldsOccupancy> getAccountUniqueFieldsOccupancy(@RequestParam String username,
                                                                                  @RequestParam String email);
 }

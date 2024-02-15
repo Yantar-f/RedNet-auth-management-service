@@ -8,6 +8,7 @@ public abstract class TokenConfig {
     private final String cookieName;
     private final String cookiePath;
     private final long cookieExpirationS;
+    private final String secretKey;
 
     protected TokenConfig(String issuer,
                           long activationMs,
@@ -15,7 +16,8 @@ public abstract class TokenConfig {
                           long allowedClockSkew,
                           String cookieName,
                           String cookiePath,
-                          long cookieExpirationS) {
+                          long cookieExpirationS,
+                          String secretKey) {
         this.issuer = issuer;
         this.activationMs = activationMs;
         this.expirationMs = expirationMs;
@@ -23,6 +25,7 @@ public abstract class TokenConfig {
         this.cookieName = cookieName;
         this.cookiePath = cookiePath;
         this.cookieExpirationS = cookieExpirationS;
+        this.secretKey = secretKey;
     }
 
     public String getIssuer() {
@@ -54,4 +57,8 @@ public abstract class TokenConfig {
     }
 
     public abstract String getTokenTypeName();
+
+    public String getSecretKey() {
+        return secretKey;
+    }
 }

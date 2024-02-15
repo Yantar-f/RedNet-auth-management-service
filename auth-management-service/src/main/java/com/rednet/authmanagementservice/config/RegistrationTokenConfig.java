@@ -12,8 +12,18 @@ public class RegistrationTokenConfig extends TokenConfig {
             @Value("${rednet.app.registration-token.allowed-clock-skew-s}") long allowedClockSkew,
             @Value("${rednet.app.registration-token.cookie-name}") String cookieName,
             @Value("${rednet.app.registration-token.cookie-path}") String cookiePath,
-            @Value("${rednet.app.registration-token.cookie-expiration-s}") long cookieExpirationS) {
-        super(issuer, activationMs, expirationMs, allowedClockSkew, cookieName, cookiePath, cookieExpirationS);
+            @Value("${rednet.app.registration-token.cookie-expiration-s}") long cookieExpirationS,
+            @Value("${rednet.app.registration-token.secret-key}") String secretKey) {
+        super(
+                issuer,
+                activationMs,
+                expirationMs,
+                allowedClockSkew,
+                cookieName,
+                cookiePath,
+                cookieExpirationS,
+                secretKey
+        );
     }
 
     @Override

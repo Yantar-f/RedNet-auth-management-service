@@ -162,17 +162,16 @@ public class AccountServiceImplTest {
     }
 
     @ParameterizedTest
-    @MethodSource("findingAccountUnexpectedErrors")
+    @MethodSource("gettingAccountUniqueFieldsOccupancyUnexpectedErrors")
     public void Getting_account_unique_fields_occupancy_with_unexpected_error_is_not_successful(
             Class<? extends FeignException> exceptinoClass) {
 
-        String username = create(String.class);
-        String email = create(String.class);
+        AccountUniqueFields uniqueFields = create(AccountUniqueFields.class);
 
-        when(client.getAccountByUsernameOrEmail(eq(username), eq(email)))
+        when(client.getAccountUniqueFieldsOccupancy(eq(uniqueFields.username()), eq(uniqueFields.email())))
                 .thenThrow(exceptinoClass);
 
-        assertThrows(ServerErrorException.class, () -> sut.findAccountByUsernameOrEmail(username, email));
+        assertThrows(ServerErrorException.class, () -> sut.getAccountUniqueFieldsOccupancy(uniqueFields));
     }
 
     private static List<Class<? extends FeignException>> gettingAccountUniqueFieldsOccupancyUnexpectedErrors() {

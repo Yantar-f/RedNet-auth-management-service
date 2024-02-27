@@ -1,4 +1,4 @@
-package com.rednet.unittests.authmanagementservice.service.impl;
+package com.rednet.authmanagementservice.unittests.service.impl;
 
 import com.rednet.authmanagementservice.client.AccountServiceClient;
 import com.rednet.authmanagementservice.entity.Account;

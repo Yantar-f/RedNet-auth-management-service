@@ -68,26 +68,56 @@ public class AuthServiceImpl implements AuthService {
 
         checkAccountUniqueFieldsOccupancy(fields);
 
-        String activationCode = activationCodeGenerator.generate();
-        String encodedPassword = passwordEncoder.encode(request.password());
-        String encodedSecretWord = passwordEncoder.encode(request.secretWord());
-        String tokenID = tokenIDGenerator.generate();
+        String encodedPassword = encodePassword(request.password());
+        String encodedSecretWord = encodeSecretWord(request.secretWord());
+        String activationCode = generateActivationCode();
+        String tokenID = generateRegistrationTokenID();
 
-        Registration registration = registrationService.createRegistration(new RegistrationCreationData(
+        RegistrationCreationData registrationCreationData = new RegistrationCreationData(
                 activationCode,
                 tokenID,
                 request.username(),
                 request.email(),
                 encodedPassword,
                 encodedSecretWord
-        ));
+        );
 
-        emailService.sendRegistrationActivationMessage(request.email(), activationCode);
+        Registration registration = createRegistrationFrom(registrationCreationData);
+
+        sendEmailVerification(request.email(), activationCode);
 
         RegistrationTokenClaims tokenClaims = new RegistrationTokenClaims(tokenID, registration.getID());
-        String registrationToken = tokenUtil.generateRegistrationToken(tokenClaims);
+        String registrationToken = generateRegistrationTokenFrom(tokenClaims);
 
         return new RegistrationCredentials(registration.getID(), registrationToken);
+    }
+
+    private Registration createRegistrationFrom(RegistrationCreationData registrationCreationData) {
+        return registrationService.createRegistration(registrationCreationData);
+    }
+
+    private String encodeSecretWord(String secretWord) {
+        return passwordEncoder.encode(secretWord);
+    }
+
+    private String encodePassword(String password) {
+        return passwordEncoder.encode(password);
+    }
+
+    private String generateRegistrationTokenID() {
+        return tokenIDGenerator.generate();
+    }
+
+    private String generateActivationCode() {
+        return activationCodeGenerator.generate();
+    }
+
+    private String generateRegistrationTokenFrom(RegistrationTokenClaims tokenClaims) {
+        return tokenUtil.generateRegistrationToken(tokenClaims);
+    }
+
+    private void sendEmailVerification(String email, String activationCode) {
+        emailService.sendRegistrationActivationMessage(email, activationCode);
     }
 
     @Override
@@ -121,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         if (! registration.getActivationCode().equals(verificationData.activationCode()))
             throw new InvalidRegistrationDataException();
 
-        registrationService.deleteRegistrationByID(registration.getID());
+        deleteRegistrationByID(registration.getID());
 
         AccountCreationData creationData = new AccountCreationData(
                 registration.getUsername(),
@@ -131,16 +161,23 @@ public class AuthServiceImpl implements AuthService {
                 new HashSet<>(){{add(RolesEnum.ROLE_USER);}}
         );
 
-        Account account = accountService.createAccount(creationData);
+        Account account = createAccountFrom(creationData);
 
         return createSession(account);
     }
 
+    private void deleteRegistrationByID(String id) {
+        registrationService.deleteRegistrationByID(id);
+    }
+
+    private Account createAccountFrom(AccountCreationData creationData) {
+        return accountService.createAccount(creationData);
+    }
 
     @Override
     public String resendEmailVerification(String registrationToken) {
         try {
-            RegistrationTokenClaims tokenClaims = tokenUtil.parseRegistrationToken(registrationToken);
+            RegistrationTokenClaims tokenClaims = parseRegistrationToken(registrationToken);
 
             Registration registration = registrationService
                     .findRegistrationByID(tokenClaims.getRegistrationID())
@@ -149,20 +186,29 @@ public class AuthServiceImpl implements AuthService {
             if (! tokenClaims.getTokenID().equals(registration.getTokenID()))
                 throw new InvalidRegistrationDataException();
 
-            String newActivationCode = activationCodeGenerator.generate();
-            String newTokenID = tokenIDGenerator.generate();
+            String newActivationCode = generateActivationCode();
+            String newTokenID = generateRegistrationTokenID();
 
             registration.setActivationCode(newActivationCode);
             registration.setTokenID(newTokenID);
             tokenClaims.setTokenID(newTokenID);
 
-            registrationService.updateRegistration(registration);
-            emailService.sendRegistrationActivationMessage(registration.getEmail(), newActivationCode);
+            updateRegistration(registration);
 
-            return tokenUtil.generateRegistrationToken(tokenClaims);
+            sendEmailVerification(registration.getEmail(), newActivationCode);
+
+            return generateRegistrationTokenFrom(tokenClaims);
         } catch (InvalidTokenException exception) {
             throw new InvalidRegistrationDataException();
         }
+    }
+
+    private void updateRegistration(Registration registration) {
+        registrationService.updateRegistration(registration);
+    }
+
+    private RegistrationTokenClaims parseRegistrationToken(String registrationToken) {
+        return tokenUtil.parseRegistrationToken(registrationToken);
     }
 
     private void checkAccountUniqueFieldsOccupancy(AccountUniqueFields fields) {

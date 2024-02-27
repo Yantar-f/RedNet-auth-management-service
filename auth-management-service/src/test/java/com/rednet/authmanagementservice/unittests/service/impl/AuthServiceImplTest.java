@@ -1,4 +1,4 @@
-package com.rednet.unittests.authmanagementservice.service.impl;
+package com.rednet.authmanagementservice.unittests.service.impl;
 
 import com.rednet.authmanagementservice.config.RolesEnum;
 import com.rednet.authmanagementservice.entity.Account;

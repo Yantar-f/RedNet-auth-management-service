@@ -1,4 +1,4 @@
-package com.rednet.unittests.authmanagementservice.service.impl;
+package com.rednet.authmanagementservice.unittests.service.impl;
 
 import com.rednet.authmanagementservice.client.SessionServiceClient;
 import com.rednet.authmanagementservice.config.RefreshTokenConfig;

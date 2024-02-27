@@ -1,12 +1,27 @@
 package com.rednet.authmanagementservice.payload.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 public record SigninRequestBody(
-    @NotBlank(message = "user identifier should be not blank")
+    @NotEmpty(message = "user identifier should be not blank")
     String userIdentifier,
 
-    @NotBlank(message = "encodedPassword should be not blank")
+    @NotEmpty(message = "encodedPassword should be not blank")
     String password
 ) {
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+
+        SigninRequestBody body = (SigninRequestBody) obj;
+
+        return  userIdentifier.equals(body.userIdentifier) &&
+                password.equals(body.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return userIdentifier.hashCode() * password.hashCode();
+    }
 }

@@ -37,11 +37,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.instancio.Instancio.create;
 import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -356,6 +359,9 @@ public class AuthControllerTest {
                         .contentType(APPLICATION_ATOM_XML))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .login(any());
     }
 
     @Test
@@ -366,6 +372,9 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(requestBody)))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .login(any());
     }
 
     @ParameterizedTest
@@ -380,6 +389,9 @@ public class AuthControllerTest {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .login(any());
     }
 
     private static List<String> signinStringFields() {
@@ -401,6 +413,9 @@ public class AuthControllerTest {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .login(any());
     }
 
     private static List<String> signinFields() {
@@ -449,9 +464,7 @@ public class AuthControllerTest {
         when(cookieUtil.createRefreshTokenCookie(eq(expectedSession.getRefreshToken())))
                 .thenReturn(expectedRefreshTokenCookie);
 
-        when(cookieUtil.createCleaningCookie(
-                        eq(expectedRegistrationTokenCleaningCookie.getName()),
-                        eq(registrationTokenCookiePath)))
+        when(cookieUtil.createRegistrationTokenCleaningCookie())
                 .thenReturn(expectedRegistrationTokenCleaningCookie);
 
         MockHttpServletResponse response = mvc.perform(post("/verify-email")
@@ -470,6 +483,8 @@ public class AuthControllerTest {
         assertEquals(expectedAccessTokenCookie.getValue(), actualAccessTokenCookie.getValue());
         assertEquals(expectedRefreshTokenCookie.getValue(), actualRefreshTokenCookie.getValue());
         assertEquals(expectedSessionDTO, actualSessionDTO);
+
+        verify(authService).verifyEmail(eq(verificationData));
     }
 
     @Test
@@ -481,6 +496,9 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(verificationData)))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .verifyEmail(any());
     }
 
     @Test
@@ -491,6 +509,9 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(verificationData)))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .verifyEmail(any());
     }
 
     @ParameterizedTest
@@ -505,6 +526,9 @@ public class AuthControllerTest {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .verifyEmail(any());
     }
 
     private static List<String> registrationVerificationDataStringFields() {
@@ -526,6 +550,9 @@ public class AuthControllerTest {
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .verifyEmail(any());
     }
 
     private static List<String> registrationVerificationDataFields() {
@@ -557,11 +584,14 @@ public class AuthControllerTest {
                 create(String.class)
         );
 
-        when(registrationTokenConfig.getCookieName())
-                .thenReturn(expectedRegistrationTokenCookie.getName());
+        when(cookieUtil.extractRegistrationTokenFromCookies(any()))
+                .thenReturn(Optional.of(oldRegistrationTokenCookie.getValue()));
 
-        when(registrationTokenConfig.getCookiePath())
-                .thenReturn(expectedRegistrationTokenCookie.getPath());
+        when(cookieUtil.createRegistrationTokenCookie(eq(expectedRegistrationTokenCookie.getValue())))
+                .thenReturn(expectedRegistrationTokenCookie);
+
+        when(authService.resendEmailVerification(eq(oldRegistrationTokenCookie.getValue())))
+                .thenReturn(expectedRegistrationTokenCookie.getValue());
 
         MockHttpServletResponse response = mvc.perform(post("/resend-email-verification")
                         .cookie(oldRegistrationTokenCookie))
@@ -573,6 +603,88 @@ public class AuthControllerTest {
         assertNotNull(actualRegistrationTokenCookie);
 
         assertEquals(expectedRegistrationTokenCookie.getValue(), actualRegistrationTokenCookie.getValue());
+
+        verify(authService)
+                .resendEmailVerification(eq(oldRegistrationTokenCookie.getValue()));
+    }
+
+    @Test
+    public void Resend_email_verification_with_invalid_registration_token_is_not_successful() throws Exception {
+        Cookie registrationTokenCookie = create(Cookie.class);
+
+        when(registrationTokenConfig.getCookieName())
+                .thenReturn(registrationTokenCookie.getName());
+
+        when(authService.resendEmailVerification(registrationTokenCookie.getValue()))
+                .thenThrow(InvalidRegistrationDataException.class);
+
+        mvc.perform(post("/resend-email-verification")
+                        .cookie(registrationTokenCookie))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+    }
+
+    @Test
+    public void Resend_email_verification_without_registration_token_is_not_successful() throws Exception {
+        String registrationTokenCookieName = create(String.class);
+
+        when(registrationTokenConfig.getCookieName())
+                .thenReturn(registrationTokenCookieName);
+
+        mvc.perform(post("/resend-email-verification"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON));
+
+        verify(authService, never())
+                .resendEmailVerification(any());
+    }
+
+    @Test
+    public void Logout_is_successful() throws Exception {
+        Cookie refreshTokenCookie = create(Cookie.class);
+        ResponseCookie refreshTokenCleaningCookie = create(ResponseCookie.class);
+        ResponseCookie accessTokenCleaningCookie = create(ResponseCookie.class);
+
+        when(cookieUtil.extractRefreshTokenFromCookies(
+                argThat(cookies -> Arrays.asList(cookies).contains(refreshTokenCookie))))
+                .thenReturn(Optional.of(refreshTokenCookie.getValue()));
+
+        when(cookieUtil.createAccessTokenCleaningCookie())
+                .thenReturn(accessTokenCleaningCookie);
+
+        when(cookieUtil.createRefreshTokenCleaningCookie())
+                .thenReturn(refreshTokenCleaningCookie);
+
+        mvc.perform(post("/signout")
+                        .cookie(refreshTokenCookie))
+                .andExpect(status().is2xxSuccessful());
+
+        verify(authService).logout(eq(refreshTokenCookie.getValue()));
+    }
+
+    @Test
+    public void Logout_without_one_token_is_successful() throws Exception {
+
+    }
+
+    @Test
+    public void Logout_without_token_pair_is_not_successful() throws Exception {
+
+    }
+
+    @Test
+    public void Refreshing_session_is_successful() throws Exception {
+
+    }
+
+    @Test
+    public void Refreshing_session_without_refresh_token_is_not_successful() throws Exception {
+
+    }
+
+    @Test
+    public void Refreshing_session_with_invalid_refresh_token_is_not_successful() throws Exception {
+
     }
 
     private String generateEmail() {

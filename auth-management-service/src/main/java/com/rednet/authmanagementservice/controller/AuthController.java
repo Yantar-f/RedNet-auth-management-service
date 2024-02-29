@@ -33,21 +33,18 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RequestMapping(produces = APPLICATION_JSON_VALUE)
 public class AuthController {
     private final AuthService authService;
-    private final AccessTokenConfig accessTokenConfig;
+    private final CookieUtil cookieUtil;
     private final RegistrationTokenConfig registrationTokenConfig;
     private final RefreshTokenConfig refreshTokenConfig;
-    private final CookieUtil cookieUtil;
 
     public AuthController(AuthService authService,
-                          AccessTokenConfig accessTokenConfig,
+                          CookieUtil cookieUtil,
                           RegistrationTokenConfig registrationTokenConfig,
-                          RefreshTokenConfig refreshTokenConfig,
-                          CookieUtil cookieUtil) {
+                          RefreshTokenConfig refreshTokenConfig) {
         this.authService = authService;
-        this.accessTokenConfig = accessTokenConfig;
+        this.cookieUtil = cookieUtil;
         this.registrationTokenConfig = registrationTokenConfig;
         this.refreshTokenConfig = refreshTokenConfig;
-        this.cookieUtil = cookieUtil;
     }
 
 
@@ -81,8 +78,8 @@ public class AuthController {
         authService.logout(refreshToken);
 
         return ResponseEntity.ok()
-                .header(SET_COOKIE, createCleaningTokenCookie(accessTokenConfig))
-                .header(SET_COOKIE, createCleaningTokenCookie(refreshTokenConfig))
+                .header(SET_COOKIE, createAccessTokenCleaningCookie())
+                .header(SET_COOKIE, createRefreshTokenCleaningCookie())
                 .build();
     }
 
@@ -103,7 +100,7 @@ public class AuthController {
         Session session = authService.verifyEmail(requestBody);
 
         return ResponseEntity.ok()
-                .header(SET_COOKIE, createCleaningTokenCookie(registrationTokenConfig))
+                .header(SET_COOKIE, createRegistrationTokenCleaningCookie())
                 .header(SET_COOKIE, createAccessTokenCookie(session.getAccessToken()))
                 .header(SET_COOKIE, createRefreshTokenCookie(session.getRefreshToken()))
                 .body(new SessionDTO(session));
@@ -119,26 +116,30 @@ public class AuthController {
                 .build();
     }
 
-
-
-
     private String extractRegistrationTokenFromRequest(HttpServletRequest request) {
-        return extractTokenFromRequest(request, registrationTokenConfig);
+        Cookie[] cookies = request.getCookies();
+
+        return cookieUtil.extractRegistrationTokenFromCookies(cookies)
+                .orElseThrow(() -> new MissingTokenException(registrationTokenConfig));
     }
 
     private String extractRefreshTokenFromRequest(HttpServletRequest request) {
-        return extractTokenFromRequest(request, refreshTokenConfig);
+        Cookie[] cookies = request.getCookies();
+
+        return cookieUtil.extractRefreshTokenFromCookies(cookies)
+                .orElseThrow(() -> new MissingTokenException(refreshTokenConfig));
     }
 
-    private String extractTokenFromRequest(HttpServletRequest request, TokenConfig tokenConfig) {
-        return Optional
-                .ofNullable(WebUtils.getCookie(request, tokenConfig.getCookieName()))
-                .map(Cookie::getValue)
-                .orElseThrow(() -> new MissingTokenException(tokenConfig));
+    private String createRefreshTokenCleaningCookie() {
+        return cookieUtil.createRefreshTokenCleaningCookie().toString();
     }
 
-    private String createCleaningTokenCookie(TokenConfig config) {
-        return cookieUtil.createCleaningCookie(config.getCookieName(), config.getCookiePath()).toString();
+    private String createRegistrationTokenCleaningCookie() {
+        return cookieUtil.createRegistrationTokenCleaningCookie().toString();
+    }
+
+    private String createAccessTokenCleaningCookie() {
+        return cookieUtil.createAccessTokenCleaningCookie().toString();
     }
 
     private String createRegistrationCookie(String token) {
